@@ -47,6 +47,32 @@ function AudioInputHandler() {
     }
   };
 
+  useEffect(() => {
+    (async () => {
+      if(finalText !== '') {
+        console.log('Trying out GPT with new data ', finalText);
+        try {
+          const response = await fetch('/gpt', {
+            method: 'POST',
+            body: JSON.stringify({
+              transcription: finalText,
+            }),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          const res = await response.json();
+
+          console.log('Got response ',res);
+        } catch (error) {
+          console.log('Failed to get GPT response ', error);
+        }
+      }
+    })().catch(err => {
+      console.error('Error in useEffect for processing transcript ', err);
+    })
+  }, [finalText])
+
   const onStreamTranscribe = async (blob: Blob) => {
     console.log("Stream transcription");
     const base64 = await new Promise<string | ArrayBuffer | null>((resolve) => {
