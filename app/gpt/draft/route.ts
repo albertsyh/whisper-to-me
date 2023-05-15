@@ -1,5 +1,5 @@
 import { Configuration, OpenAIApi } from 'openai';
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import { Messages, askChatGPT } from '@/utils/gpt/base';
 
 const configuration = new Configuration({
@@ -11,11 +11,11 @@ const openai = new OpenAIApi(configuration);
 // prettier-ignore
 const prompts = {
   systemPrompt: () =>
-    `You are a highly intelligent and personalizable email content drafter that converts recorded transcripts to email body.
+`You are a highly intelligent and personalizable email content drafter that converts recorded transcripts to email body.
 
 From: Cath Gilmour
 
-Guide for writing like Cath Gilmour?
+Guide for writing like Cath Gilmour:
 Tone: Polite, friendly, and sincere.
 Salutation: Use a culturally appropriate greeting like "Kia ora" followed by the recipients' names.
 Use clear and concise language to convey the message.
@@ -51,13 +51,13 @@ export async function POST(request: NextRequest) {
     const messages: Messages = [
       {
         role: 'system',
-        content: prompts.systemPrompt()
+        content: prompts.systemPrompt(),
       },
       {
         role: 'user',
-        content: prompts.userPrompt(transcription)
-      }
-    ]
+        content: prompts.userPrompt(transcription),
+      },
+    ];
 
     console.log('Sending messages ', messages);
 
@@ -66,7 +66,10 @@ export async function POST(request: NextRequest) {
     console.log('Got response ', res);
 
     if (res.response.type === 'completeMessage') {
-      return NextResponse.json({ response: res.response.completeMessage }, { status: 200 });
+      return NextResponse.json(
+        { response: res.response.completeMessage },
+        { status: 200 }
+      );
     }
 
     return NextResponse.json({ response: 'Hello World' }, { status: 200 });
@@ -87,4 +90,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-};
+}
