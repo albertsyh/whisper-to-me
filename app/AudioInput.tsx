@@ -9,6 +9,8 @@ function AudioInputHandler() {
   const textPrompt = useRef("");
   const { transcribed, dispatch } = useContext(AudioContext);
   const [finalText, setFinalText] = useState<string>("");
+  const [draftedEmail, setDraftedEmail] = useState<string>("");
+  const [draftingEmail, setDraftingEmail] = useState<boolean>(false);
 
   useEffect(() => {
     textPrompt.current = transcribed.join(" ");
@@ -49,29 +51,36 @@ function AudioInputHandler() {
 
   useEffect(() => {
     (async () => {
-      if(finalText !== '') {
-        console.log('Trying out GPT with new data ', finalText);
+      if (finalText !== "") {
+        console.log("Trying out GPT with new transcription ", finalText);
         try {
-          const response = await fetch('/gpt', {
-            method: 'POST',
+          setDraftingEmail(true);
+
+          const response = await fetch("/gpt/draft", {
+            method: "POST",
             body: JSON.stringify({
               transcription: finalText,
             }),
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
           });
           const res = await response.json();
 
-          console.log('Got response ',res);
+          console.log("Got response ", res);
+
+          if (res.response) {
+            setDraftingEmail(false);
+            setDraftedEmail(res.response);
+          }
         } catch (error) {
-          console.log('Failed to get GPT response ', error);
+          console.log("Failed to get GPT response ", error);
         }
       }
-    })().catch(err => {
-      console.error('Error in useEffect for processing transcript ', err);
-    })
-  }, [finalText])
+    })().catch((err) => {
+      console.error("Error in useEffect for processing transcript ", err);
+    });
+  }, [finalText]);
 
   const onStreamTranscribe = async (blob: Blob) => {
     console.log("Stream transcription");
@@ -166,6 +175,16 @@ function AudioInputHandler() {
           {recording ? "stop" : "start"}
         </button>
       </div>
+      {draftingEmail || draftedEmail !== "" ? (
+        <div className="flex justify-between w-full">
+          <div className="w-full bg-slate-100 rounded-lg p-3">
+            <h2 className="text-sm font-bold">Drafted Email</h2>
+            <div className="h-fit text-slate-700 overflow-y-auto whitespace-break-spaces break-all max-h-96">
+              {draftedEmail !== "" ? draftedEmail : "Drafting Email..."}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
