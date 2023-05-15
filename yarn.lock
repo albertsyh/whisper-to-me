@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@albertsyh/use-whisper@^0.2.6":
-  version "0.2.6"
-  resolved "https://registry.yarnpkg.com/@albertsyh/use-whisper/-/use-whisper-0.2.6.tgz#147e1e70bc25878636fd66179e1a038fd3727174"
-  integrity sha512-zuL57a8kwe6vFYBqygzPfYBUYQWSq+E8Z0GZZy3n/JABgfqCpjzmKxw2tvoeGuVyljQyyerEVVtiE5VZtM1arQ==
+"@albertsyh/use-whisper@^0.2.7":
+  version "0.2.7"
+  resolved "https://registry.yarnpkg.com/@albertsyh/use-whisper/-/use-whisper-0.2.7.tgz#a1b2459afa81a2963488beca907cbe4270dbc2a0"
+  integrity sha512-EW9GFfvwOeR5J6zT/2zz4PMLtA2D6PRkaTg/q8EQu5Ziy3X8y16p8CxEVKzvqmGLt0cZWIYzVAHdmDhFmdaE4g==
   dependencies:
     "@chengsokdara/react-hooks-async" "^0.0.2"
     "@ffmpeg/core" "^0.11.0"

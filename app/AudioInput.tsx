@@ -6,7 +6,6 @@ import { useWhisper } from "@albertsyh/use-whisper";
 import AudioContextProvider, { AudioContext } from "./AudioContext";
 
 function AudioInputHandler() {
-  const count = useRef(0);
   const textPrompt = useRef("");
   const { transcribed, dispatch } = useContext(AudioContext);
   const [finalText, setFinalText] = useState<string>("");
@@ -87,11 +86,11 @@ function AudioInputHandler() {
 
   const { startRecording, stopRecording, recording } = useWhisper({
     streaming: true,
-    timeSlice: 1_000, // 2 second
+    timeSlice: 3_000, // seconds
     removeSilence: true,
     onTranscribe,
     onStreamTranscribe,
-    // showLogs: true,
+    silenceBufferThreshold: 25_000,
   });
 
   const handleRecording = useCallback(() => {
@@ -101,6 +100,11 @@ function AudioInputHandler() {
       startRecording();
     }
   }, [recording, startRecording, stopRecording]);
+
+  const handleRestart = useCallback(() => {
+    setFinalText("");
+    dispatch({ type: "SET_TRANSCRIPTION", payload: [] });
+  }, []); // eslint-disable-line
 
   return (
     <div className="flex py-3 flex-col items-start gap-y-4">
@@ -114,12 +118,20 @@ function AudioInputHandler() {
           <div className="text-slate-700">{finalText}</div>
         </div>
       </div>
-      <button
-        className="bg-blue-500 text-slate-200 px-3 py-2 rounded"
-        onClick={handleRecording}
-      >
-        {recording ? "stop" : "start"}
-      </button>
+      <div className="flex justify-between w-full">
+        <button
+          className="bg-slate-500 text-slate-200 px-3 py-2 rounded"
+          onClick={handleRestart}
+        >
+          restart
+        </button>
+        <button
+          className="bg-blue-500 text-slate-200 px-3 py-2 rounded"
+          onClick={handleRecording}
+        >
+          {recording ? "stop" : "start"}
+        </button>
+      </div>
     </div>
   );
 }

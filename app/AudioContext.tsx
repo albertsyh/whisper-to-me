@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useCallback, useReducer, useState } from "react";
+import { createContext, useReducer } from "react";
 
 type AudioContextState = {
   transcribed: string[];
@@ -13,7 +13,9 @@ export const AudioContext = createContext(
 );
 const initialState: AudioContextState = { transcribed: [] };
 
-type AudioContextActions = { type: "UPDATE_TRANSCRIPTION"; payload: string };
+type AudioContextActions =
+  | { type: "UPDATE_TRANSCRIPTION"; payload: string }
+  | { type: "SET_TRANSCRIPTION"; payload: string[] };
 
 const reducer = (state: AudioContextState, action: AudioContextActions) => {
   switch (action.type) {
@@ -21,6 +23,11 @@ const reducer = (state: AudioContextState, action: AudioContextActions) => {
       return {
         ...state,
         transcribed: [...state.transcribed, action.payload],
+      };
+    case "SET_TRANSCRIPTION":
+      return {
+        ...state,
+        transcribed: action.payload,
       };
     default:
       return state;
