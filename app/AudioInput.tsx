@@ -104,6 +104,7 @@ function AudioInputHandler() {
   const handleRestart = useCallback(() => {
     setFinalText("");
     dispatch({ type: "SET_TRANSCRIPTION", payload: [] });
+    textPrompt.current = "";
   }, []); // eslint-disable-line
 
   return (
