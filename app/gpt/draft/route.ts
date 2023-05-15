@@ -1,12 +1,5 @@
-import { Configuration, OpenAIApi } from 'openai';
 import { NextRequest, NextResponse } from 'next/server';
-import { Messages, askChatGPT } from '@/utils/gpt/base';
-
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const openai = new OpenAIApi(configuration);
+import { GPTResponseToken, Messages, streamChatGPT } from '@/utils/gpt/base';
 
 // prettier-ignore
 const prompts = {
@@ -27,7 +20,7 @@ Express optimism and hope for a positive response or outcome.
 Sign off with an appropriate closing, such as "Ngā mihi nui."
 
 
-Use these examples as a guide to sentence structure and tone:
+Use these examples as a guide to sentence structure and tone. Don't use them directly in the email:
 "I hope you all had a good weekend."
 "In the past, I think Lions Club members have helped with such projects."
 "There might be others who could also help? Or a community working bee?"
@@ -61,33 +54,75 @@ export async function POST(request: NextRequest) {
 
     console.log('Sending messages ', messages);
 
-    const res = await askChatGPT(messages, 'gpt-3.5-turbo');
+    const gptRes = await streamChatGPT(messages, 'gpt-3.5-turbo');
 
-    console.log('Got response ', res);
+    const encoder = new TextEncoder();
 
-    if (res.response.type === 'completeMessage') {
-      return NextResponse.json(
-        { response: res.response.completeMessage },
-        { status: 200 }
-      );
-    }
+    const stream = new ReadableStream({
+      async start(controller) {
+        function onParse(token: GPTResponseToken) {
+          if (token.type === 'token') {
+            controller.enqueue(encoder.encode(token.token));
+          } else if (token.type === 'error') {
+            controller.error(token.errorType);
+          } else if (token.type === 'completeMessage') {
+            controller.close();
+          } else {
+            // Process any other tokens we want to here - maybe to save statistics?
+          }
+        }
 
-    return NextResponse.json({ response: 'Hello World' }, { status: 200 });
-  } catch (error) {
-    // @ts-ignore
-    if (error?.response?.data) {
-      // @ts-ignore
-      console.log(error.response.data.error.code);
-      return NextResponse.json(
-        // @ts-ignore
-        { error: error.response.data.error.type },
-        // @ts-ignore
-        { status: 500 }
-      );
-    }
+        for await (const token of gptRes) {
+          onParse(token);
+        }
+      },
+    });
+
+    return new Response(stream, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/event-stream;charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',
+      },
+    });
+  } catch (err) {
     return NextResponse.json(
-      { error: (error as Error).message },
+      { error: (err as Error).message },
       { status: 500 }
     );
   }
 }
+
+// A simpler function we can use if the top one borks
+// export async function GET() {
+//   const sleep = (ms: number) =>
+//     new Promise((resolve) => setTimeout(resolve, ms));
+
+//   let responseStream = new TransformStream();
+
+//   const writer = responseStream.writable.getWriter();
+
+//   const encoder = new TextEncoder();
+
+//   writer.write(encoder.encode('This is the first message...'));
+
+//   (async function process() {
+//     for (let i = 0; i < 10; i++) {
+//       console.log('Writing token ', i);
+//       writer.write(encoder.encode(`This is token number ${i}`));
+//       await sleep(500);
+//     }
+//     writer.close();
+//   })();
+
+//   return new Response(responseStream.readable, {
+//     headers: {
+//       'Content-Type': 'text/event-stream;charset=utf-8',
+//       'Cache-Control': 'no-cache, no-transform',
+//       Connection: 'keep-alive',
+//       'X-Accel-Buffering': 'no',
+//     },
+//   });
+// }

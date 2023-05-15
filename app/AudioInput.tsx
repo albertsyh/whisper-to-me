@@ -49,30 +49,83 @@ function AudioInputHandler() {
     }
   };
 
+  async function testStreaming(transcript: string) {
+    const response = await fetch('/gpt/draftStream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        transcript,
+      }),
+    });
+
+    if (!response.ok) console.error('Error - ', response.statusText);
+
+    const data = response.body;
+
+    if (!data) {
+      console.error('No data returned');
+      return;
+    }
+
+    const reader = data.getReader();
+    const decoder = new TextDecoder();
+
+    let done = false;
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading;
+
+      console.log('Got chunk - ', decoder.decode(value));
+    }
+    console.log('Completed!');
+  }
+
+  useEffect(() => {
+    (window as any).testStreaming = testStreaming;
+  }, []);
+
   useEffect(() => {
     (async () => {
       if (finalText !== '') {
         console.log('Trying out GPT with new transcription ', finalText);
         try {
+          setDraftedEmail('');
           setDraftingEmail(true);
 
           const response = await fetch('/gpt/draft', {
             method: 'POST',
-            body: JSON.stringify({
-              transcription: finalText,
-            }),
             headers: {
               'Content-Type': 'application/json',
             },
+            body: JSON.stringify({
+              transcription: finalText,
+            }),
           });
-          const res = await response.json();
 
-          console.log('Got response ', res);
+          if (!response.ok) console.error('Error - ', response.statusText);
 
-          if (res.response) {
-            setDraftingEmail(false);
-            setDraftedEmail(res.response);
+          const data = response.body;
+
+          if (!data) {
+            console.error('No data returned');
+            return;
           }
+
+          const reader = data.getReader();
+          const decoder = new TextDecoder();
+
+          let done = false;
+          setDraftingEmail(false);
+          while (!done) {
+            const { value, done: doneReading } = await reader.read();
+            done = doneReading;
+
+            console.log('Got chunk - ', decoder.decode(value));
+            setDraftedEmail((email) => email + decoder.decode(value));
+          }
+          console.log('Completed!');
         } catch (error) {
           console.log('Failed to get GPT response ', error);
         }
