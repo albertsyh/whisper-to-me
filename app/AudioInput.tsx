@@ -108,14 +108,21 @@ function AudioInputHandler() {
 
   return (
     <div className="flex py-3 flex-col items-start gap-y-4">
-      <div className="flex flex-row w-full gap-x-4">
-        <div className="w-full h-96 bg-slate-100 rounded-lg p-3">
+      <div
+        className="flex flex-row w-full gap-x-4"
+        style={{ minHeight: "400px" }}
+      >
+        <div className="w-full bg-slate-100 rounded-lg p-3">
           <h2 className="text-sm font-bold">Real-time</h2>
-          <div className="text-slate-700">{transcribed.join(" ")}</div>
+          <div className="h-fit text-slate-700 overflow-y-auto whitespace-break-spaces break-all max-h-96">
+            {transcribed.join(" ")}
+          </div>
         </div>
-        <div className="w-full h-96 bg-slate-100 rounded-lg p-3">
+        <div className="w-full bg-slate-100 rounded-lg p-3">
           <h2 className="text-sm font-bold">Final</h2>
-          <div className="text-slate-700">{finalText}</div>
+          <div className="h-fit text-slate-700 overflow-y-auto whitespace-break-spaces break-all max-h-96">
+            {finalText}
+          </div>
         </div>
       </div>
       <div className="flex justify-between w-full">
