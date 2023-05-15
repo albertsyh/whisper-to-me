@@ -87,7 +87,7 @@ function AudioInputHandler() {
 
   const { startRecording, stopRecording, recording } = useWhisper({
     streaming: true,
-    timeSlice: 2_000, // 2 second
+    timeSlice: 1_000, // 2 second
     removeSilence: true,
     onTranscribe,
     onStreamTranscribe,
