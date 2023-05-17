@@ -49,43 +49,6 @@ function AudioInputHandler() {
     }
   };
 
-  async function testStreaming(transcript: string) {
-    const response = await fetch('/gpt/draftStream', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        transcript,
-      }),
-    });
-
-    if (!response.ok) console.error('Error - ', response.statusText);
-
-    const data = response.body;
-
-    if (!data) {
-      console.error('No data returned');
-      return;
-    }
-
-    const reader = data.getReader();
-    const decoder = new TextDecoder();
-
-    let done = false;
-    while (!done) {
-      const { value, done: doneReading } = await reader.read();
-      done = doneReading;
-
-      console.log('Got chunk - ', decoder.decode(value));
-    }
-    console.log('Completed!');
-  }
-
-  useEffect(() => {
-    (window as any).testStreaming = testStreaming;
-  }, []);
-
   useEffect(() => {
     (async () => {
       if (finalText !== '') {
