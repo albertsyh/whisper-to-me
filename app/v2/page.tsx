@@ -117,10 +117,10 @@ export default function Home() {
     useWhisper({
       streaming: true,
       timeSlice: 5_000, // seconds
-      removeSilence: true,
+      // removeSilence: true,
       onTranscribe,
       onStreamTranscribe,
-      silenceBufferThreshold: 25_000,
+      silenceBufferThreshold: 5_000,
     });
 
   const handleRecording = useCallback(
@@ -151,22 +151,22 @@ export default function Home() {
         >
           Hi Cath!
           <br />
-          Let's start writing.
+          Lets start writing.
         </div>
         <div className="Examples text-gray-500 px-6 py-3 relative">
           <p className={styles.item1}>
-            "Write me an email to ... with ... - don't mention ... - make sure
-            to ..."
+            Write me an email to ... with ... - dont mention ... - make sure to
+            ...
           </p>
 
           <p className={styles.item2}>
-            "Hi John, I'd love to make it to Saturday dinner. Shall we do it
-            next week at 2 pm?"
+            Hi John, Id love to make it to Saturday dinner. Shall we do it next
+            week at 2 pm?
           </p>
 
           <p className={styles.item3}>
-            "I need a very casual email asking my friend Donna to lunch next
-            week, keep it short."
+            I need a very casual email asking my friend Donna to lunch next
+            week, keep it short.
           </p>
         </div>
       </div>
