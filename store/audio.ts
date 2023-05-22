@@ -4,6 +4,8 @@ import { devtools } from 'zustand/middleware';
 
 export type AudioStoreState = {
   listening: boolean;
+  recordingStart: Date | null;
+  savedRecordingTimeMs: number;
   recordingState: 'READY' | 'RECORDING' | 'PAUSED';
   streamingTranscriptions: string[];
   fullTranscription: string;
@@ -38,6 +40,8 @@ export const getTranscriptPrompt = (streamingTranscriptions: string[]) => {
 export const useAudioStore = create<AudioStoreState>()(
   devtools(
     (set, get) => ({
+      recordingStart: null,
+      savedRecordingTimeMs: 0,
       listening: false,
       fullTranscription: '',
       transcribingFull: false,
@@ -109,13 +113,22 @@ export const getReadyToRecord = (
       startRecording: (cleanPrevious: boolean) => {
         startRecording();
 
+        const recordingStart = useAudioStore.getState().recordingStart;
+
         let newState: Partial<AudioStoreState> = {
           recordingState: 'RECORDING',
+          recordingStart: new Date(),
+          savedRecordingTimeMs:
+            useAudioStore.getState().savedRecordingTimeMs +
+            (recordingStart !== null
+              ? new Date().getTime() - recordingStart.getTime()
+              : 0),
         };
 
         if (cleanPrevious) {
           newState = {
             ...newState,
+            savedRecordingTimeMs: 0,
             transcribingFull: false,
             transcribingStream: false,
             streamingTranscriptions: [],
@@ -135,11 +148,23 @@ export const getReadyToRecord = (
       },
       pauseRecording: () => {
         pauseRecording();
-        return useAudioStore.setState(
-          { recordingState: 'PAUSED' },
-          false,
-          'PAUSED_RECORDING'
-        );
+
+        const recordingStart = useAudioStore.getState().recordingStart;
+
+        let newState: Partial<AudioStoreState> = {
+          recordingState: 'PAUSED',
+          recordingStart: null,
+        };
+
+        if (recordingStart !== null)
+          newState = {
+            ...newState,
+            savedRecordingTimeMs:
+              useAudioStore.getState().savedRecordingTimeMs +
+              (new Date().getTime() - recordingStart.getTime()),
+          };
+
+        return useAudioStore.setState(newState, false, 'PAUSED_RECORDING');
       },
     },
   });

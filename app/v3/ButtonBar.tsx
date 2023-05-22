@@ -1,12 +1,43 @@
 'use client';
 
 import useAudioStore from '@/store/audio';
+import { useEffect, useState } from 'react';
+import { shallow } from 'zustand/shallow';
 
 export default function ButtonBar() {
   console.log('Button bar rerendered');
+  const [timeElapsedStr, setTimeElapsedStr] = useState<string | null>(null);
 
   const recordingFunctions = useAudioStore((state) => state.recordingFunctions);
   const recordingState = useAudioStore((state) => state.recordingState);
+
+  const { pastRecordingTimeMs, lastStartTime } = useAudioStore(
+    (state) => ({
+      pastRecordingTimeMs: state.savedRecordingTimeMs,
+      lastStartTime: state.recordingStart,
+    }),
+    shallow
+  );
+
+  useEffect(() => {
+    if (recordingState === 'RECORDING') {
+      const setTime = () => {
+        const timeElapsedMs = lastStartTime
+          ? new Date().getTime() - lastStartTime.getTime()
+          : 0;
+        setTimeElapsedStr(
+          new Date(timeElapsedMs + pastRecordingTimeMs)
+            .toISOString()
+            .substring(14, 19)
+        );
+      };
+
+      setTime();
+
+      const interval = setInterval(setTime, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [recordingState, pastRecordingTimeMs, lastStartTime]);
 
   return (
     recordingFunctions && (
@@ -67,7 +98,7 @@ export default function ButtonBar() {
             className="inline-flex items-center rounded-md bg-emerald-700 pr-3 pl-4 py-2 font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             onClick={() => recordingFunctions.stopRecording()}
           >
-            Write
+            Write {timeElapsedStr ? '(' + timeElapsedStr + ')' : ''}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
