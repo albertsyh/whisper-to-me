@@ -11,7 +11,7 @@ import useAudioStore, {
   addTrailingTranscription,
 } from '@/store/audio';
 // import useWhisper from '@hrishioa/use-whisper';
-import { useWhisper } from '../../../use-whisper/lib/useWhisper';
+import { useWhisper } from '../../utils/tmp_useWhisper';
 import { useEffect, useRef } from 'react';
 import { TRANSCRIBE_TIME_SLICES } from '@/utils/constants';
 

@@ -91,17 +91,6 @@
     regenerator-runtime "^0.13.7"
     resolve-url "^0.2.1"
 
-"@hrishioa/use-whisper@file:../use-whisper":
-  version "0.3.1"
-  dependencies:
-    "@chengsokdara/react-hooks-async" "^0.0.2"
-    "@ffmpeg/core" "^0.11.0"
-    "@ffmpeg/ffmpeg" "^0.11.6"
-    axios "^1.3.4"
-    hark "^1.2.3"
-    lamejs "github:zhuker/lamejs"
-    recordrtc "^5.6.2"
-
 "@humanwhocodes/config-array@^0.11.8":
   version "0.11.8"
   resolved "https://registry.yarnpkg.com/@humanwhocodes/config-array/-/config-array-0.11.8.tgz#03595ac2075a4dc0f191cc2131de14fbd7d410b9"
