@@ -3,31 +3,6 @@
 import useAudioStore from '@/store/audio';
 import React, { useEffect, useRef } from 'react';
 
-// Set up audio context and analyser
-const audioCtx = new (window.AudioContext ||
-  (window as any).webkitAudioContext)();
-let analyser = audioCtx.createAnalyser();
-
-// Set up VisualizerContext
-const VisualizerContext = {
-  getVisualizerContext: () => audioCtx,
-  getAnalyser: () => analyser,
-  resetAnalyser: () => {
-    analyser = audioCtx.createAnalyser();
-  },
-};
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
-    : null;
-}
-
 // Visualization functions
 const visualizeSineWave = (
   canvasCtx: CanvasRenderingContext2D,
@@ -35,9 +10,20 @@ const visualizeSineWave = (
   width: number,
   height: number,
   backgroundColor: string,
-  strokeColor: string
+  strokeColor: string,
+  context: AudioContext,
+  analyser: AnalyserNode
 ): (() => void) => {
-  let analyser = VisualizerContext.getAnalyser();
+  function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : null;
+  }
 
   let running = true;
 
@@ -53,8 +39,6 @@ const visualizeSineWave = (
   const draw = () => {
     if (!running) return;
     requestAnimationFrame(draw);
-
-    analyser = VisualizerContext.getAnalyser();
 
     analyser.getByteTimeDomainData(dataArray);
 
@@ -117,10 +101,8 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
         });
         const audioContext = new AudioContext();
         const source = audioContext.createMediaStreamSource(stream);
-        const analyser = audioContext.createAnalyser();
+        let analyser = audioContext.createAnalyser();
         source.connect(analyser);
-        VisualizerContext.getVisualizerContext = () => audioContext;
-        VisualizerContext.getAnalyser = () => analyser;
 
         if (canvasRef.current) {
           const canvasCtx = canvasRef.current.getContext('2d');
@@ -131,7 +113,9 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
               width,
               height,
               backgroundColor,
-              strokeColor
+              strokeColor,
+              audioContext,
+              analyser
             );
           }
         }
