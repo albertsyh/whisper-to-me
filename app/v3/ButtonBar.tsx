@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { shallow } from 'zustand/shallow';
 
 export default function ButtonBar() {
-  console.log('Button bar rerendered');
+  // console.log('Button bar rerendered');
   const [timeElapsedStr, setTimeElapsedStr] = useState<string | null>(null);
 
   const recordingFunctions = useAudioStore((state) => state.recordingFunctions);

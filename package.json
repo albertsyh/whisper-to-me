@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@albertsyh/use-whisper": "^0.2.7",
+    "@hrishioa/use-whisper": "file:../use-whisper",
     "@types/node": "20.1.3",
     "@types/react": "18.2.6",
     "@types/react-dom": "18.2.4",

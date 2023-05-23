@@ -8,6 +8,7 @@ export type AudioStoreState = {
   savedRecordingTimeMs: number;
   recordingState: 'READY' | 'RECORDING' | 'PAUSED';
   streamingTranscriptions: string[];
+  trailingTranscriptions: string[];
   fullTranscription: string;
   transcribingStream: boolean;
   transcribingFull: boolean;
@@ -43,6 +44,7 @@ export const useAudioStore = create<AudioStoreState>()(
       recordingStart: null,
       savedRecordingTimeMs: 0,
       listening: false,
+      trailingTranscriptions: [],
       fullTranscription: '',
       transcribingFull: false,
       transcribingStream: false,
@@ -63,6 +65,16 @@ export const setFullTranscription = (transcription: string) => {
     }),
     false,
     'SET_FULL_TRANSCRIPTION'
+  );
+};
+
+export const addTrailingTranscription = (transcription: string) => {
+  useAudioStore.setState(
+    (state) => ({
+      trailingTranscriptions: [...state.trailingTranscriptions, transcription],
+    }),
+    false,
+    'ADD_TRAILING_TRANSCRIPTION'
   );
 };
 
