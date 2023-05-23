@@ -246,11 +246,7 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
         }
       };
     }
-  }, [three, width, height, recordingState]);
-
-  // useEffect(() => {
-  //
-  // }, [backgroundColor, height, recordingState, strokeColor, width]);
+  }, [three, width, height, recordingState, backgroundColor, strokeColor]);
 
   return <canvas ref={canvasRef} width={width} height={height} />;
 };
