@@ -188,7 +188,7 @@ export default function Whisper() {
       // showLogs: true,
       autoTranscribe: true,
       trailingTranscribeTimeSlices: TRANSCRIBE_TIME_SLICES,
-      silenceBufferThreshold: 2_500,
+      silenceBufferThreshold: 2_000,
     });
 
   useEffect(() => {

@@ -30,14 +30,22 @@ export default function Transcription() {
       <div className="text-xl font-bold">
         Transcription {transcribingActive ? '(Processing)' : ''}
       </div>
-      {!fullTranscription ? (
-        <div className="text-large">Streaming: {streamingTranscription}</div>
-      ) : (
-        <div className="text-large">Full: {fullTranscription}</div>
-      )}
-      <div className="mt-5 text-large text-orange-400">
-        {' '}
-        Trailing: {previousTrailingTranscription} + {trailingTranscription}
+      <div className="flex flex-row justify-items-center gap-5">
+        <div className="text-large w-3/12">
+          {!fullTranscription
+            ? 'Streaming:' +
+              ('...' + streamingTranscription.slice(-400).slice(0, -10) + '...')
+            : 'Full: ' + fullTranscription}
+        </div>
+        <div className="text-large text-emerald-900 w-3/12">
+          {' '}
+          Trailing:{' '}
+          {'...' +
+            (previousTrailingTranscription + ' ' + trailingTranscription)
+              .slice(-400)
+              .slice(0, -10) +
+            '...'}
+        </div>
       </div>
     </div>
   );
