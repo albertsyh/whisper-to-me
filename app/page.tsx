@@ -1,33 +1,19 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-
-import { findIconDefinition } from '@fortawesome/fontawesome-svg-core';
-
+import Recorder from './Recorder';
 import styles from './page.module.scss';
-import AudioInput from './AudioInput';
 
-import { library } from '@fortawesome/fontawesome-svg-core';
-import { fad } from '@fortawesome/pro-duotone-svg-icons';
 import ToggleTheme from '@/components/ToggleTheme';
-
-library.add(fad);
-
-const face = findIconDefinition({
-  prefix: 'fad',
-  iconName: 'face-holding-back-tears',
-});
 
 export default function Home() {
   return (
     <main className={styles.main}>
-      <div className="p-3">
+      <div className="p-3 h-full max-w-screen-lg mx-auto w-full">
         <h1 className="text-lg font-bold flex justify-between items-center">
-          Transcriber
+          <span className="uppercase">Transcriber</span>
           <ToggleTheme />
         </h1>
-        <p>
-          <FontAwesomeIcon icon={face} />
-        </p>
-        <AudioInput />
+        <div className="flex h-full flex-col" style={{ minHeight: '50vh' }}>
+          <Recorder />
+        </div>
       </div>
     </main>
   );
