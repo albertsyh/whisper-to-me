@@ -1,5 +1,4 @@
 import { Fira_Sans } from 'next/font/google';
-import Whisper from './Whisper';
 import ButtonBar from './ButtonBar';
 import Transcription from './Transcription';
 import AudioVisualizer from './Visualizer/VisualizerBig';
@@ -37,7 +36,6 @@ export default function Home() {
         </div>
       </div>
       <Transcription />
-      <Whisper />
       <ButtonBar />
     </main>
   );
