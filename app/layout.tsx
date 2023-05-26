@@ -1,11 +1,15 @@
-import { Inter } from "next/font/google";
-import "./globals.scss";
+import { Inter } from 'next/font/google';
+import { RootProviders } from '@/context/core';
+import { config } from '@fortawesome/fontawesome-svg-core';
+import '@fortawesome/fontawesome-svg-core/styles.css';
+import './globals.scss';
+config.autoAddCss = false;
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: "Whisper to me",
-  description: "Transcribe your speech in real-time",
+  title: 'Whisper to me',
+  description: 'Transcribe your speech in real-time',
 };
 
 export default function RootLayout({
@@ -14,8 +18,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <RootProviders>{children}</RootProviders>
+      </body>
     </html>
   );
 }
