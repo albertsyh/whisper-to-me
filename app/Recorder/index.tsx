@@ -18,7 +18,7 @@ const EXAMPLES = [
 ];
 
 function Recorder() {
-  const audioContextRef = useRef<AudioContext>(new AudioContext());
+  const audioContextRef = useRef<AudioContext | null>(null);
   const [started, setStarted] = useState<boolean>(false);
   const [transcript, setTranscript] = useState<string>('');
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
@@ -59,6 +59,9 @@ function Recorder() {
   };
 
   useEffect(() => {
+    if ('AudioContext' in window) {
+      audioContextRef.current = new AudioContext();
+    }
     startAudio().then((stream) => stopAudio(stream, true));
   }, []); // eslint-disable-line
 
@@ -69,11 +72,13 @@ function Recorder() {
           navigator.mediaDevices
             .getUserMedia({ audio: true })
             .then((stream) => {
-              const source =
-                audioContextRef.current.createMediaStreamSource(stream);
-              const analyser = audioContextRef.current.createAnalyser();
-              source.connect(analyser);
-              setAnalyser(analyser);
+              if (audioContextRef.current) {
+                const source =
+                  audioContextRef.current.createMediaStreamSource(stream);
+                const analyser = audioContextRef.current.createAnalyser();
+                source.connect(analyser);
+                setAnalyser(analyser);
+              }
               if (isStart) setStarted(true);
               resolve(stream);
             })
