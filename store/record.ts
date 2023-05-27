@@ -31,6 +31,7 @@ export const useTranscriptionStore = create<TranscriptionStore>()(
       recordingState: null,
       transcriptions: [],
       saveTranscription: (text: string) => {
+        if (!text) return;
         const currentIdx = get().id;
         const current = get().transcriptions[currentIdx];
         if (current) {
