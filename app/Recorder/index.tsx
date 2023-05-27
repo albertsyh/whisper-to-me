@@ -1,62 +1,73 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { library } from '@fortawesome/fontawesome-svg-core';
-import { fad } from '@fortawesome/pro-duotone-svg-icons';
+import {
+  ChatBubbleOvalLeftEllipsisIcon,
+  MicrophoneIcon,
+  PauseCircleIcon,
+  PencilIcon,
+  PlayCircleIcon,
+  StopCircleIcon,
+} from '@heroicons/react/24/solid';
 
 import Button from '@/components/Button';
 import { useTranscriptionStore } from '@/store/record';
 import { useWhisper } from '@albertsyh/use-whisper';
-import { generateIcon } from '@/utils/icons';
-
-library.add(fad);
-
-const EXAMPLES = [
-  'Write me an email to .... with .... - don’t mention ..... - make sure to',
-  'Hi John, I’d love to make it to Saturday dinner. Shall we do it next week at 2 pm?',
-  'I need a very casual email asking my friend Donna to lunch next week, make it short.',
-];
+import Samples from './Samples';
+import TranscriptionsBlock from './TranscriptionsBlock';
+import HeaderBlock from './HeaderBlock';
 
 function Recorder() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const [started, setStarted] = useState<boolean>(false);
-  const [transcript, setTranscript] = useState<string>('');
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const { updateRecordingState, recordingState } = useTranscriptionStore();
 
-  const onTranscribe = async (blob: Blob) => {
-    const base64 = await new Promise<string | ArrayBuffer | null>((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(blob);
-    });
-    const body = JSON.stringify({
-      file: base64,
-      model: 'whisper-1',
-    });
-    const headers = { 'Content-Type': 'application/json' };
-    try {
-      const response = await fetch('/audio', {
-        method: 'POST',
-        body,
-        headers,
+  const {
+    updateRecordingState,
+    recordingState,
+    saveTranscription,
+    transcriptions,
+  } = useTranscriptionStore();
+
+  const onTranscribe = useCallback(
+    async (blob: Blob) => {
+      const base64 = await new Promise<string | ArrayBuffer | null>(
+        (resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        }
+      );
+      const body = JSON.stringify({
+        file: base64,
+        model: 'whisper-1',
       });
+      const headers = { 'Content-Type': 'application/json' };
+      try {
+        const response = await fetch('/audio', {
+          method: 'POST',
+          body,
+          headers,
+        });
 
-      const res = await response.json();
-      setTranscript(res.text);
-      return {
-        blob,
-        text: res.text,
-      };
-    } catch (error) {
-      console.log('Failed to transcribe', error);
-      return {
-        blob,
-        text: undefined,
-      };
-    }
-  };
+        const res = await response.json();
+        updateRecordingState('STOPPED');
+        saveTranscription(res.text);
+        return {
+          blob,
+          text: res.text,
+        };
+      } catch (error) {
+        console.log('Failed to transcribe', error);
+        updateRecordingState('STOPPED');
+        return {
+          blob,
+          text: undefined,
+        };
+      }
+    },
+    [updateRecordingState, saveTranscription]
+  );
 
   useEffect(() => {
     if ('AudioContext' in window) {
@@ -101,18 +112,17 @@ function Recorder() {
       if (isInit) {
         updateRecordingState('READY');
       } else {
-        updateRecordingState('STOPPED');
+        updateRecordingState('TRANSCRIBING');
       }
     },
     [updateRecordingState]
   );
 
-  const { startRecording, pauseRecording, stopRecording, recording } =
-    useWhisper({
-      removeSilence: true,
-      onTranscribe,
-      silenceBufferThreshold: 25_000,
-    });
+  const { startRecording, pauseRecording, stopRecording } = useWhisper({
+    removeSilence: true,
+    onTranscribe,
+    silenceBufferThreshold: 25_000,
+  });
 
   const handleState = useCallback(async () => {
     if (!recordingState) {
@@ -147,39 +157,37 @@ function Recorder() {
 
   return (
     <div>
-      <h2 className="text-2xl py-10">
-        {`Hi Cath, let's start `}
-        <span className="font-bold mr-3">writing</span>
-        <FontAwesomeIcon icon={generateIcon('feather')} />
-      </h2>
-      {!started && (
-        <div className="py-10">
-          {EXAMPLES.map((o) => (
-            <div key={o} className="py-5">
-              {o} <hr />
-            </div>
-          ))}
-        </div>
-      )}
-      {started && <div className="py-10">{transcript}</div>}
+      <HeaderBlock
+        state={recordingState}
+        hasTranscription={!!transcriptions.length}
+      />
+      {!started && <Samples />}
+      {started && <TranscriptionsBlock transcriptions={transcriptions} />}
+
       <div className="fixed md:relative bottom-0 right-0 p-4 w-full flex">
         <div className="flex gap-2 ml-auto">
           {recordingState &&
             ['RECORDING', 'PAUSED'].includes(recordingState) && (
               <Button variant="danger" onClick={handleStop}>
-                Stop <FontAwesomeIcon icon={generateIcon('circle-stop')} />
+                Stop <StopCircleIcon className="h-5 inline" />
               </Button>
             )}
-          <Button onClick={handleState}>
+          <Button
+            onClick={handleState}
+            disabled={recordingState === 'TRANSCRIBING'}
+          >
             {(!recordingState ||
               ['STOPPED', 'READY'].includes(recordingState)) && (
-              <FontAwesomeIcon icon={generateIcon('microphone')} />
+              <MicrophoneIcon className="h-5 inline" />
             )}
             {recordingState === 'RECORDING' && (
-              <FontAwesomeIcon icon={generateIcon('pause-circle')} />
+              <PauseCircleIcon className="h-5 inline" />
             )}
             {recordingState === 'PAUSED' && (
-              <FontAwesomeIcon icon={generateIcon('play-circle')} />
+              <PlayCircleIcon className="h-5 inline" />
+            )}
+            {recordingState === 'TRANSCRIBING' && (
+              <ChatBubbleOvalLeftEllipsisIcon className="h-5 inline" />
             )}
           </Button>
         </div>

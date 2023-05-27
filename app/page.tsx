@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <main className={styles.main}>
       <div className="p-3 h-full max-w-screen-lg mx-auto w-full">
-        <h1 className="text-lg font-bold flex justify-between items-center">
+        <h1 className="text-lg font-bold flex justify-between items-center h-11">
           <span className="uppercase">Transcriber</span>
           <ToggleTheme />
         </h1>

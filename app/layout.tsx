@@ -1,9 +1,6 @@
 import { Inter } from 'next/font/google';
 import { RootProviders } from '@/context/core';
-import { config } from '@fortawesome/fontawesome-svg-core';
-import '@fortawesome/fontawesome-svg-core/styles.css';
 import './globals.scss';
-config.autoAddCss = false;
 
 const inter = Inter({ subsets: ['latin'] });
 
