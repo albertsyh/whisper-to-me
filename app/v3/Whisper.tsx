@@ -12,6 +12,7 @@ import useAudioStore, {
 } from '@/store/audio';
 // import useWhisper from '@hrishioa/use-whisper';
 import { useWhisper } from '../../utils/tmp_useWhisper';
+// import { useWhisper } from '../../../use-whisper/lib';
 import { useEffect, useRef } from 'react';
 import { TRANSCRIBE_TIME_SLICES } from '@/utils/constants';
 
@@ -47,6 +48,98 @@ export default function Whisper() {
       ),
     []
   );
+
+  const comparedOnTranscribe = async (blob: Blob) => {
+    setTranscribingFull(true);
+
+    async function transcribeUsingWhisper(blob: Blob) {
+      console.time('Transcribing with Whisper');
+
+      const base64 = await new Promise<string | ArrayBuffer | null>(
+        (resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        }
+      );
+
+      const body = JSON.stringify({
+        file: base64,
+        model: 'whisper-1',
+      });
+      const headers = { 'Content-Type': 'application/json' };
+
+      try {
+        const response = await fetch('/audio', {
+          method: 'POST',
+          body,
+          headers,
+        });
+
+        const res = await response.json();
+
+        console.timeEnd('Transcribing with Whisper');
+
+        if (res.text) {
+          console.log('Transcription from Whisper - ', res.text);
+          return res.text;
+        } else return null;
+      } catch (error) {
+        console.log('Error transcribing using Whisper - ', error);
+        return null;
+      }
+    }
+
+    async function transcribeUsingHendy(blob: Blob) {
+      console.time('Transcribing with Hendy');
+
+      const formData = new FormData();
+      formData.append('language', 'eng');
+      formData.append('model_size', 'tiny');
+      formData.append('audio_data', blob, 'temp_recording');
+
+      try {
+        const response = await fetch('http://128.199.213.197:8000/transcribe', {
+          method: 'POST',
+          body: formData,
+        });
+
+        console.timeEnd('Transcribing with Hendy');
+
+        const transcription = await response.text();
+
+        console.log('Transcription from Hendy - ', transcription);
+
+        return transcription;
+      } catch (error) {
+        console.log('Error transcribing using Hendy - ', error);
+        return null;
+      }
+    }
+
+    const transcriptions = await Promise.all([
+      transcribeUsingWhisper(blob),
+      transcribeUsingHendy(blob),
+    ]);
+
+    setTranscribingFull(false);
+
+    if (transcriptions[0])
+      return {
+        blob,
+        text: transcriptions[0],
+      };
+    else if (transcriptions[1])
+      return {
+        blob,
+        text: transcriptions[1],
+      };
+    else
+      return {
+        blob,
+        text: undefined,
+      };
+  };
 
   const onTranscribe = async (blob: Blob) => {
     setTranscribingFull(true);
@@ -182,7 +275,7 @@ export default function Whisper() {
       timeSlice: 2_000, // seconds
       // concatChunk: true,
       removeSilence: true,
-      onTranscribe,
+      onTranscribe: comparedOnTranscribe,
       onStreamTranscribe,
       onTrailingTranscribe,
       // showLogs: true,
