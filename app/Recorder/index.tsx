@@ -1,17 +1,16 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChatBubbleOvalLeftEllipsisIcon,
   MicrophoneIcon,
   PauseCircleIcon,
-  PencilIcon,
   PlayCircleIcon,
   StopCircleIcon,
 } from '@heroicons/react/24/solid';
+import { useWhisper } from '@albertsyh/use-whisper';
 
 import Button from '@/components/Button';
-import { useTranscriptionStore } from '@/store/record';
-import { useWhisper } from '@albertsyh/use-whisper';
+import { Transcription, useTranscriptionStore } from '@/store/record';
 import Samples from './Samples';
 import TranscriptionsBlock from './TranscriptionsBlock';
 import HeaderBlock from './HeaderBlock';
@@ -25,12 +24,15 @@ function Recorder() {
   const {
     updateRecordingState,
     recordingState,
-    saveTranscription,
     transcriptions,
+    updateTranscribingState,
+    isTranscribing,
+    onTranscribe: onStoreTranscribe,
   } = useTranscriptionStore();
 
   const onTranscribe = useCallback(
     async (blob: Blob) => {
+      console.log('Transcribing');
       const base64 = await new Promise<string | ArrayBuffer | null>(
         (resolve) => {
           const reader = new FileReader();
@@ -51,22 +53,21 @@ function Recorder() {
         });
 
         const res = await response.json();
-        updateRecordingState('STOPPED');
-        saveTranscription(res.text);
+        onStoreTranscribe(res.text);
         return {
           blob,
           text: res.text,
         };
       } catch (error) {
         console.log('Failed to transcribe', error);
-        updateRecordingState('STOPPED');
+        onStoreTranscribe('');
         return {
           blob,
           text: undefined,
         };
       }
     },
-    [updateRecordingState, saveTranscription]
+    [onStoreTranscribe]
   );
 
   useEffect(() => {
@@ -111,14 +112,12 @@ function Recorder() {
       });
       if (isInit) {
         updateRecordingState('READY');
-      } else {
-        updateRecordingState('TRANSCRIBING');
       }
     },
     [updateRecordingState]
   );
 
-  const { startRecording, pauseRecording, stopRecording } = useWhisper({
+  const { startRecording, stopRecording, recording } = useWhisper({
     removeSilence: true,
     onTranscribe,
     silenceBufferThreshold: 25_000,
@@ -134,8 +133,9 @@ function Recorder() {
       startRecording();
       updateRecordingState('RECORDING');
     } else if (recordingState === 'RECORDING') {
-      pauseRecording();
+      stopRecording();
       updateRecordingState('PAUSED');
+      updateTranscribingState(true);
     } else if (recordingState === 'PAUSED') {
       startRecording();
       updateRecordingState('RECORDING');
@@ -144,22 +144,67 @@ function Recorder() {
     recordingState,
     startAudio,
     startRecording,
-    pauseRecording,
     stopAudio,
     updateRecordingState,
+    updateTranscribingState,
+    stopRecording,
   ]);
+
+  const processGpt = useCallback(
+    async (transcription?: Transcription) => {
+      let processThisTranscription: Transcription | undefined = transcription;
+      if (!transcription) {
+        processThisTranscription = transcriptions[transcriptions.length - 1];
+      }
+      updateRecordingState('READY');
+    },
+    [transcriptions, updateRecordingState]
+  );
 
   const handleStop = useCallback(async () => {
     if (!stream) return;
+    if (recording) {
+      await stopRecording();
+    }
     stopAudio(stream);
-    await stopRecording();
-  }, [stopAudio, stopRecording, stream]);
+    if (!recording) {
+      processGpt();
+    }
+  }, [stopAudio, stopRecording, stream, recording, processGpt]);
 
+  useEffect(() => {
+    const unsub = useTranscriptionStore.subscribe(
+      (state) => ({
+        recordingState: state.recordingState,
+        transcription: state.transcriptions[state.transcriptions.length - 1],
+      }),
+      (state: any) => {
+        if (state.recordingState === 'STOPPED') {
+          // Process GPT
+          processGpt(state.transcription);
+        }
+      }
+    );
+
+    return () => {
+      console.log();
+      unsub();
+    };
+  }, []); // eslint-disable-line
+
+  const ButtonIcon = useMemo(() => {
+    if (isTranscribing) return ChatBubbleOvalLeftEllipsisIcon;
+    if (!recordingState || ['STOPPED', 'READY'].includes(recordingState))
+      return MicrophoneIcon;
+    if (recordingState === 'RECORDING') return PauseCircleIcon;
+    return PlayCircleIcon;
+  }, [recordingState, isTranscribing]);
   return (
     <div>
       <HeaderBlock
         state={recordingState}
         hasTranscription={!!transcriptions.length}
+        isTranscribing={isTranscribing}
       />
       {!started && <Samples />}
       {started && <TranscriptionsBlock transcriptions={transcriptions} />}
@@ -172,23 +217,8 @@ function Recorder() {
                 Stop <StopCircleIcon className="h-5 inline" />
               </Button>
             )}
-          <Button
-            onClick={handleState}
-            disabled={recordingState === 'TRANSCRIBING'}
-          >
-            {(!recordingState ||
-              ['STOPPED', 'READY'].includes(recordingState)) && (
-              <MicrophoneIcon className="h-5 inline" />
-            )}
-            {recordingState === 'RECORDING' && (
-              <PauseCircleIcon className="h-5 inline" />
-            )}
-            {recordingState === 'PAUSED' && (
-              <PlayCircleIcon className="h-5 inline" />
-            )}
-            {recordingState === 'TRANSCRIBING' && (
-              <ChatBubbleOvalLeftEllipsisIcon className="h-5 inline" />
-            )}
+          <Button onClick={handleState} disabled={isTranscribing}>
+            <ButtonIcon className="h-5 inline" />
           </Button>
         </div>
       </div>

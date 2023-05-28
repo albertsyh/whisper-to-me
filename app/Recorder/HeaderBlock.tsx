@@ -1,12 +1,20 @@
-import { RECORD_STATE } from '@/store/record';
 import { PencilIcon } from '@heroicons/react/24/solid';
 import { memo } from 'react';
+import { RECORD_STATE } from '@/store/record';
 
 type HeaderBlockProps = {
   state: RECORD_STATE;
   hasTranscription: boolean;
+  isTranscribing: boolean;
 };
-function HeaderBlock({ state, hasTranscription }: HeaderBlockProps) {
+function HeaderBlock({
+  state,
+  hasTranscription,
+  isTranscribing,
+}: HeaderBlockProps) {
+  if (isTranscribing) {
+    return <h2 className="text-2xl py-10">Transcribing...</h2>;
+  }
   return (
     <div>
       {(!state ||
@@ -17,11 +25,14 @@ function HeaderBlock({ state, hasTranscription }: HeaderBlockProps) {
           <PencilIcon className="h-5 inline" />
         </h2>
       )}
+      {state === 'READY' && hasTranscription && (
+        <h2 className="text-2xl py-10">
+          <span>Start writing something new</span>
+          <PencilIcon className="h-5 inline" />
+        </h2>
+      )}
       {state === 'RECORDING' && (
         <h2 className="text-2xl py-10">Listening...</h2>
-      )}
-      {state === 'TRANSCRIBING' && (
-        <h2 className="text-2xl py-10">Transcribing...</h2>
       )}
       {state && ['PAUSED', 'STOPPED'].includes(state) && (
         <h2 className="text-2xl py-10">History</h2>
