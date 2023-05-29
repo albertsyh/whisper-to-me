@@ -45,6 +45,27 @@ function Recorder() {
         model: 'whisper-1',
       });
       const headers = { 'Content-Type': 'application/json' };
+
+      // TODO: Remove and integrate later
+      (async function testCustomAudioRoute() {
+        try {
+          const response = await fetch('/audio/custom', {
+            method: 'POST',
+            body: JSON.stringify({
+              file: base64,
+              model: 'base.en',
+            }),
+            headers,
+          });
+
+          const res = await response.json();
+          if (res.text) console.log('Custom: ', res.text);
+          else console.log('Custom audio route response - ', res);
+        } catch (error) {
+          console.error('Error testing custom audio route - ', error);
+        }
+      })();
+
       try {
         const response = await fetch('/audio', {
           method: 'POST',
@@ -53,6 +74,10 @@ function Recorder() {
         });
 
         const res = await response.json();
+
+        if (res.text) console.log('Whisper: ', res.text);
+        else console.log('Whisper response - ', res);
+
         onStoreTranscribe(res.text);
         return {
           blob,
