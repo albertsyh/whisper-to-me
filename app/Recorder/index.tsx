@@ -20,6 +20,7 @@ function Recorder() {
   const [started, setStarted] = useState<boolean>(false);
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [timeElapsedStr, setTimeElapsedStr] = useState<string | null>(null);
 
   const {
     updateRecordingState,
@@ -28,6 +29,8 @@ function Recorder() {
     updateTranscribingState,
     isTranscribing,
     onTranscribe: onStoreTranscribe,
+    lastStartTime,
+    savedRecordingTimeMs,
   } = useTranscriptionStore();
 
   const onTranscribe = useCallback(
@@ -150,6 +153,7 @@ function Recorder() {
 
   const handleState = useCallback(async () => {
     if (!recordingState) {
+      // Initialisation when mic permissions has not been granted
       const audioStream = await startAudio();
       stopAudio(audioStream, true);
     } else if (['READY', 'STOPPED'].includes(recordingState)) {
@@ -193,6 +197,7 @@ function Recorder() {
     }
     stopAudio(stream);
     if (!recording) {
+      setTimeElapsedStr('');
       processGpt();
     }
   }, [stopAudio, stopRecording, stream, recording, processGpt]);
@@ -212,7 +217,6 @@ function Recorder() {
     );
 
     return () => {
-      console.log();
       unsub();
     };
   }, []); // eslint-disable-line
@@ -224,6 +228,27 @@ function Recorder() {
     if (recordingState === 'RECORDING') return PauseCircleIcon;
     return PlayCircleIcon;
   }, [recordingState, isTranscribing]);
+
+  useEffect(() => {
+    if (recordingState === 'RECORDING') {
+      const setTime = () => {
+        const timeElapsedMs = lastStartTime
+          ? new Date().getTime() - lastStartTime.getTime()
+          : 0;
+        setTimeElapsedStr(
+          new Date(timeElapsedMs + savedRecordingTimeMs)
+            .toISOString()
+            .substring(14, 19)
+        );
+      };
+
+      setTime();
+
+      const interval = setInterval(setTime, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [recordingState, lastStartTime, savedRecordingTimeMs]);
+
   return (
     <div>
       <HeaderBlock
@@ -243,6 +268,7 @@ function Recorder() {
               </Button>
             )}
           <Button onClick={handleState} disabled={isTranscribing}>
+            {timeElapsedStr && <span className="mr-2">{timeElapsedStr}</span>}
             <ButtonIcon className="h-5 inline" />
           </Button>
         </div>

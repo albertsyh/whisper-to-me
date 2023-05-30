@@ -19,6 +19,8 @@ export type TranscriptionStore = {
   updateRecordingState: (state: RECORD_STATE) => void;
   updateTranscribingState: (state: boolean) => void;
   onTranscribe: (text: string) => void;
+  lastStartTime: Date | null;
+  savedRecordingTimeMs: number;
 };
 
 export const useTranscriptionStore = create<TranscriptionStore>()(
@@ -28,6 +30,8 @@ export const useTranscriptionStore = create<TranscriptionStore>()(
       recordingState: null,
       isTranscribing: false,
       transcriptions: [],
+      lastStartTime: null,
+      savedRecordingTimeMs: 0,
       onTranscribe: (text: string) => {
         const currentState = get().recordingState;
         const id = get().id!;
@@ -94,12 +98,31 @@ export const useTranscriptionStore = create<TranscriptionStore>()(
               id: id + 1,
             });
           }
+          // Reset timer
+          set({
+            savedRecordingTimeMs: 0,
+            lastStartTime: null,
+          });
         }
       },
       updateTranscribingState: (state: boolean) =>
         set({ isTranscribing: state }),
-      updateRecordingState: (state: RECORD_STATE) =>
-        set({ recordingState: state }),
+      updateRecordingState: (state: RECORD_STATE) => {
+        set({ recordingState: state });
+        if (state === 'RECORDING') {
+          set({ lastStartTime: new Date() });
+        }
+        if (state === 'PAUSED') {
+          const lastStartTime = get().lastStartTime;
+          if (lastStartTime) {
+            const currentTime = new Date();
+            const timeDiff = currentTime.getTime() - lastStartTime.getTime();
+            set({
+              savedRecordingTimeMs: get().savedRecordingTimeMs + timeDiff,
+            });
+          }
+        }
+      },
     })),
     { name: 'transcriptionStore', trace: true, serialize: { options: true } }
   )
