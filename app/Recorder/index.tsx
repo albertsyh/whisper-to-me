@@ -22,6 +22,9 @@ function Recorder() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [timeElapsedStr, setTimeElapsedStr] = useState<string | null>(null);
 
+  // TEMP
+  const [gptProcessed, setGptProcessed] = useState<string>('');
+
   const {
     updateRecordingState,
     recordingState,
@@ -175,6 +178,37 @@ function Recorder() {
       if (!transcription) {
         processThisTranscription = transcriptions[transcriptions.length - 1];
       }
+      if (!processThisTranscription) return;
+      const response = await fetch('/gpt/draft', {
+        method: 'POST',
+        body: JSON.stringify({
+          transcription: processThisTranscription.text,
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) console.error('Error - ', response.statusText);
+
+      const data = response.body;
+
+      if (!data) {
+        console.error('No data returned');
+        return;
+      }
+      const reader = data.getReader();
+      const decoder = new TextDecoder();
+
+      let done = false;
+      let streamedData = '';
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+
+        // console.log('Got chunk - ', decoder.decode(value));
+        streamedData += decoder.decode(value);
+        setGptProcessed(streamedData);
+      }
       updateRecordingState('READY');
     },
     [transcriptions, updateRecordingState]
@@ -187,8 +221,8 @@ function Recorder() {
     }
     stopAudio(stream);
     if (!recording) {
-      setTimeElapsedStr('');
       processGpt();
+      setTimeElapsedStr('');
     }
   }, [stopAudio, stopRecording, stream, recording, processGpt]);
 
@@ -202,6 +236,7 @@ function Recorder() {
         if (state.recordingState === 'STOPPED') {
           // Process GPT
           processGpt(state.transcription);
+          setTimeElapsedStr('');
         }
       }
     );
@@ -254,6 +289,12 @@ function Recorder() {
       <div className="relative" style={{ minHeight: '50vh' }}>
         {!started && <Samples />}
         {started && <TranscriptionsBlock transcriptions={transcriptions} />}
+        {gptProcessed && (
+          <div className="px-1 py-4">
+            <div className="font-bold">Email</div>
+            {gptProcessed}
+          </div>
+        )}
         <div
           className="pointer-events-none absolute top-0 left-0 right-0 bottom-0 z-10"
           ref={analyserRef}

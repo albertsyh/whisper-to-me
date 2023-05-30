@@ -27,7 +27,7 @@ function HeaderBlock({
       )}
       {state === 'READY' && hasTranscription && (
         <h2 className="text-2xl py-10">
-          <span>Start writing something new</span>
+          <span className="mr-3">Start writing something new</span>
           <PencilIcon className="h-5 inline" />
         </h2>
       )}
