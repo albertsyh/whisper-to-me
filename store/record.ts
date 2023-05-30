@@ -13,6 +13,9 @@ export type Transcription = {
 
 export type TranscriptionStore = {
   id: number;
+  lastRecordingStart: Date | null;
+  streamingTranscriptions: { text: string; createdAt: Date }[];
+  savedRecordingTimeMs: number;
   recordingState: RECORD_STATE;
   isTranscribing: boolean;
   transcriptions: Transcription[];
@@ -24,7 +27,11 @@ export type TranscriptionStore = {
 export const useTranscriptionStore = create<TranscriptionStore>()(
   devtools(
     subscribeWithSelector((set, get) => ({
+      // TODO: Why?
       id: 0,
+      savedRecordingTimeMs: 0,
+      streamingTranscriptions: [],
+      lastRecordingStart: null,
       recordingState: null,
       isTranscribing: false,
       transcriptions: [],
@@ -96,11 +103,48 @@ export const useTranscriptionStore = create<TranscriptionStore>()(
           }
         }
       },
-      updateTranscribingState: (state: boolean) =>
-        set({ isTranscribing: state }),
-      updateRecordingState: (state: RECORD_STATE) =>
-        set({ recordingState: state }),
+      updateTranscribingState: (
+        state: boolean // TODO: Using state might be confusing everywhere
+      ) => set({ isTranscribing: state }),
+      updateRecordingState: (state: RECORD_STATE) => {
+        let updates: Partial<TranscriptionStore> = {
+          savedRecordingTimeMs: get().savedRecordingTimeMs,
+          recordingState: state,
+        };
+
+        if (state === 'RECORDING') {
+          updates.lastRecordingStart = new Date();
+
+          if (get().recordingState !== 'PAUSED')
+            updates.savedRecordingTimeMs = 0;
+        } else if (
+          state === 'PAUSED' ||
+          state === 'STOPPED' ||
+          state == 'READY'
+        ) {
+          const lastRecordingStart = get().lastRecordingStart;
+          if (lastRecordingStart)
+            updates.savedRecordingTimeMs! +=
+              new Date().getTime() - lastRecordingStart.getTime();
+          updates.lastRecordingStart = null;
+        }
+
+        return set(updates);
+      },
     })),
     { name: 'transcriptionStore', trace: true, serialize: { options: true } }
   )
 );
+
+export const addStreamingTranscription = (text: string) => {
+  useTranscriptionStore.setState(
+    {
+      streamingTranscriptions: [
+        ...useTranscriptionStore.getState().streamingTranscriptions,
+        { text, createdAt: new Date() },
+      ],
+    },
+    false,
+    'ADD_STREAMING_TRANSCRIPTION'
+  );
+};

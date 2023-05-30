@@ -8,12 +8,66 @@ import {
   StopCircleIcon,
 } from '@heroicons/react/24/solid';
 import { useWhisper } from '@albertsyh/use-whisper';
+// import { useWhisper } from '../../../use-whisper/lib'; // This needs version 2.0.8 from hrishi/streamingonsilence
 
 import Button from '@/components/Button';
-import { Transcription, useTranscriptionStore } from '@/store/record';
+import {
+  Transcription,
+  addStreamingTranscription,
+  useTranscriptionStore,
+} from '@/store/record';
 import Samples from './Samples';
 import TranscriptionsBlock from './TranscriptionsBlock';
 import HeaderBlock from './HeaderBlock';
+
+function PlaybackTime() {
+  const { savedRecordingTimeMs, lastRecordingStart } = useTranscriptionStore(
+    (state) => ({
+      savedRecordingTimeMs: state.savedRecordingTimeMs,
+      lastRecordingStart: state.lastRecordingStart,
+    })
+  );
+
+  const [playbackTimeStr, setPlaybackTimeStr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (savedRecordingTimeMs || lastRecordingStart) {
+      const interval = setInterval(() => {
+        const elapsedTime =
+          savedRecordingTimeMs +
+          (lastRecordingStart
+            ? new Date().getTime() - lastRecordingStart.getTime()
+            : 0);
+        setPlaybackTimeStr(
+          new Date(elapsedTime).toISOString().substring(14, 19)
+        );
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setPlaybackTimeStr(null);
+    }
+  }, [savedRecordingTimeMs, lastRecordingStart]);
+
+  return playbackTimeStr ? (
+    <span className="mx-1">{playbackTimeStr}</span>
+  ) : null;
+}
+
+function getStreamingPrompt(
+  streamingTranscriptions: { text: string; createdAt: Date }[]
+) {
+  function getLastNWords(str: string, n: number): string {
+    const words = str.split(/\s+/); // Split the string on whitespace
+    return words.slice(Math.max(words.length - n, 0)).join(' ');
+  }
+
+  return streamingTranscriptions.length
+    ? `Continue from here: ${getLastNWords(
+        streamingTranscriptions.map((transcript) => transcript.text).join(' '),
+        10
+      )}`
+    : '';
+}
 
 function Recorder() {
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -27,8 +81,69 @@ function Recorder() {
     transcriptions,
     updateTranscribingState,
     isTranscribing,
+    streamingTranscriptions,
     onTranscribe: onStoreTranscribe,
   } = useTranscriptionStore();
+
+  const streamingTranscriptionsPrompt = useRef(
+    getStreamingPrompt(useTranscriptionStore.getState().streamingTranscriptions)
+  );
+
+  useEffect(
+    () =>
+      useTranscriptionStore.subscribe(
+        (state) =>
+          (streamingTranscriptionsPrompt.current = getStreamingPrompt(
+            state.streamingTranscriptions
+          ))
+      ),
+    []
+  );
+
+  const onTranscribeWhenSilent = async (blob: Blob) => {
+    console.log('Transcribing because we encountered silence...');
+
+    const base64 = await new Promise<string | ArrayBuffer | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+    const headers = { 'Content-Type': 'application/json' };
+
+    const prompt = streamingTranscriptionsPrompt.current;
+
+    try {
+      console.time('Transcribe with Desktop');
+      const response = await fetch('/audio/custom', {
+        method: 'POST',
+        body: JSON.stringify({
+          file: base64,
+          model: 'small.en',
+          prompt,
+        }),
+        headers,
+      });
+
+      const res = await response.json();
+      if (res.text) console.log('Custom: ', res.text);
+      else console.log('Custom audio route response - ', res);
+      if (res.text) addStreamingTranscription(res.text);
+      console.timeEnd('Transcribe with Desktop');
+
+      return {
+        blob,
+        text: res.text,
+      };
+    } catch (error) {
+      console.timeEnd('Transcribe with Desktop');
+      console.error('Error testing custom audio route - ', error);
+
+      return {
+        blob,
+        text: undefined,
+      };
+    }
+  };
 
   const onTranscribe = useCallback(
     async (blob: Blob) => {
@@ -49,14 +164,16 @@ function Recorder() {
       // TODO: Remove and integrate later
       (async function testCustomAudioRoute() {
         try {
+          console.time('Transcribe with Desktop');
           const response = await fetch('/audio/custom', {
             method: 'POST',
             body: JSON.stringify({
               file: base64,
-              model: 'base.en',
+              model: 'tiny.en',
             }),
             headers,
           });
+          console.timeEnd('Transcribe with Desktop');
 
           const res = await response.json();
           if (res.text) console.log('Custom: ', res.text);
@@ -67,12 +184,14 @@ function Recorder() {
       })();
 
       try {
+        console.time('Transcribe with Whisper');
         const response = await fetch('/audio', {
           method: 'POST',
           body,
           headers,
         });
 
+        console.timeEnd('Transcribe with Whisper');
         const res = await response.json();
 
         if (res.text) console.log('Whisper: ', res.text);
@@ -143,8 +262,10 @@ function Recorder() {
   );
 
   const { startRecording, stopRecording, recording } = useWhisper({
+    onTranscribeWhenSilent,
     removeSilence: true,
     onTranscribe,
+    timeSlice: 500,
     silenceBufferThreshold: 25_000,
   });
 
@@ -181,17 +302,22 @@ function Recorder() {
       if (!transcription) {
         processThisTranscription = transcriptions[transcriptions.length - 1];
       }
-      updateRecordingState('READY');
     },
     [transcriptions, updateRecordingState]
   );
 
   const handleStop = useCallback(async () => {
+    console.log(
+      'Streamed transcriptions - ',
+      streamingTranscriptions.map((c) => c.text).join('')
+    );
+
     if (!stream) return;
+    stopAudio(stream);
+    updateRecordingState('READY');
     if (recording) {
       await stopRecording();
     }
-    stopAudio(stream);
     if (!recording) {
       processGpt();
     }
@@ -224,6 +350,7 @@ function Recorder() {
     if (recordingState === 'RECORDING') return PauseCircleIcon;
     return PlayCircleIcon;
   }, [recordingState, isTranscribing]);
+
   return (
     <div>
       <HeaderBlock
@@ -243,6 +370,7 @@ function Recorder() {
               </Button>
             )}
           <Button onClick={handleState} disabled={isTranscribing}>
+            <PlaybackTime />
             <ButtonIcon className="h-5 inline" />
           </Button>
         </div>

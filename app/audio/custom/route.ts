@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { file, model = 'medium.en' } = body;
+    const { file, model = 'medium.en', prompt = '' } = body;
 
     // Create the buffer from the base64 string
     const base64split = file.split(';base64,');
@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     formData.append('language', 'eng');
     formData.append('model_size', model);
     formData.append('audio_data', blob, 'temp_recording');
+    formData.append('prompt', prompt);
 
     const hendyURL = 'https://hrishidesk11.tail52103.ts.net/whisper/transcribe';
 
