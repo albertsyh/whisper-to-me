@@ -14,11 +14,11 @@ import { Transcription, useTranscriptionStore } from '@/store/record';
 import Samples from './Samples';
 import TranscriptionsBlock from './TranscriptionsBlock';
 import HeaderBlock from './HeaderBlock';
+import Visualizer from '@/components/Visualiser';
 
 function Recorder() {
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<HTMLDivElement>(null);
   const [started, setStarted] = useState<boolean>(false);
-  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [timeElapsedStr, setTimeElapsedStr] = useState<string | null>(null);
 
@@ -99,38 +99,28 @@ function Recorder() {
   );
 
   useEffect(() => {
-    if ('AudioContext' in window) {
-      audioContextRef.current = new AudioContext();
-    }
     startAudio().then((stream) => stopAudio(stream, true));
   }, []); // eslint-disable-line
 
-  const startAudio = useCallback(
-    async function (isStart?: boolean): Promise<MediaStream> {
-      return new Promise((resolve, reject) => {
-        if ('mediaDevices' in navigator) {
-          navigator.mediaDevices
-            .getUserMedia({ audio: true })
-            .then((stream) => {
-              if (audioContextRef.current) {
-                const source =
-                  audioContextRef.current.createMediaStreamSource(stream);
-                const analyser = audioContextRef.current.createAnalyser();
-                source.connect(analyser);
-                setAnalyser(analyser);
-              }
-              if (isStart) setStarted(true);
-              resolve(stream);
-            })
-            .catch((error) => {
-              console.error('Microphone access denied:', error);
-              reject();
-            });
-        }
-      });
-    },
-    [audioContextRef, setAnalyser]
-  );
+  const startAudio = useCallback(async function (
+    isStart?: boolean
+  ): Promise<MediaStream> {
+    return new Promise((resolve, reject) => {
+      if ('mediaDevices' in navigator) {
+        navigator.mediaDevices
+          .getUserMedia({ audio: true })
+          .then((stream) => {
+            if (isStart) setStarted(true);
+            resolve(stream);
+          })
+          .catch((error) => {
+            console.error('Microphone access denied:', error);
+            reject();
+          });
+      }
+    });
+  },
+  []);
 
   const stopAudio = useCallback(
     (stream: MediaStream, isInit?: boolean) => {
@@ -249,6 +239,11 @@ function Recorder() {
     }
   }, [recordingState, lastStartTime, savedRecordingTimeMs]);
 
+  const { width, height } = analyserRef.current?.getBoundingClientRect() || {
+    width: 0,
+    height: 0,
+  };
+
   return (
     <div>
       <HeaderBlock
@@ -256,8 +251,18 @@ function Recorder() {
         hasTranscription={!!transcriptions.length}
         isTranscribing={isTranscribing}
       />
-      {!started && <Samples />}
-      {started && <TranscriptionsBlock transcriptions={transcriptions} />}
+      <div className="relative" style={{ minHeight: '50vh' }}>
+        {!started && <Samples />}
+        {started && <TranscriptionsBlock transcriptions={transcriptions} />}
+        <div
+          className="pointer-events-none absolute top-0 left-0 right-0 bottom-0 z-10"
+          ref={analyserRef}
+        >
+          {recordingState === 'RECORDING' && recording && (
+            <Visualizer width={width} height={height} />
+          )}
+        </div>
+      </div>
 
       <div className="fixed md:relative bottom-0 right-0 p-4 w-full flex">
         <div className="flex gap-2 ml-auto">

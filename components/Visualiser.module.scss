@@ -1,0 +1,29 @@
+.container {
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: -0.75rem;
+    right: -0.75rem;
+    height: calc(50% + 50px);
+    z-index: -1;
+    background: linear-gradient(transparent, #ffffff 25%);
+  }
+  &.dark::before {
+    background: linear-gradient(transparent, #020617 25%);
+  }
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -50px;
+    left: -0.75rem;
+    right: -0.75rem;
+    height: calc(50% + 50px);
+    z-index: -1;
+    background: linear-gradient(#ffffff 75%, transparent);
+  }
+  &.dark::after {
+    background: linear-gradient(#020617 75%, transparent);
+  }
+}
