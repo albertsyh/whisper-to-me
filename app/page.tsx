@@ -1,4 +1,5 @@
 import Recorder from './Recorder';
+import Writer from './Writer';
 import styles from './page.module.scss';
 
 import ToggleTheme from '@/components/ToggleTheme';
@@ -13,6 +14,9 @@ export default function Home() {
         </h1>
         <div className="flex h-full flex-col" style={{ minHeight: '50vh' }}>
           <Recorder />
+        </div>
+        <div className="flex h-full flex-col" style={{ minHeight: '50vh' }}>
+          <Writer />
         </div>
       </div>
     </main>

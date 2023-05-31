@@ -7,8 +7,8 @@ import {
   PlayCircleIcon,
   StopCircleIcon,
 } from '@heroicons/react/24/solid';
-import { useWhisper } from '@albertsyh/use-whisper';
-// import { useWhisper } from '../../../use-whisper/lib'; // This needs version 2.0.8 from hrishi/streamingonsilence
+// import { useWhisper } from '@albertsyh/use-whisper';
+import { useWhisper } from '../../../use-whisper/lib'; // This needs version 2.0.8 from hrishi/streamingonsilence
 
 import Button from '@/components/Button';
 import {
