@@ -13,6 +13,7 @@ export type Transcription = {
 
 export type TranscriptionStore = {
   id: number;
+  disabled: boolean;
   lastRecordingStart: Date | null;
   streamingTranscriptions: { text: string; createdAt: Date }[];
   savedRecordingTimeMs: number;
@@ -29,6 +30,7 @@ export const useTranscriptionStore = create<TranscriptionStore>()(
     subscribeWithSelector((set, get) => ({
       // TODO: Why?
       id: 0,
+      disabled: false,
       savedRecordingTimeMs: 0,
       streamingTranscriptions: [],
       lastRecordingStart: null,
@@ -115,6 +117,10 @@ export const useTranscriptionStore = create<TranscriptionStore>()(
         if (state === 'RECORDING') {
           updates.lastRecordingStart = new Date();
 
+          // if (get().recordingState !== 'PAUSED') {
+          //   updates.id = get().id + 1;
+          // }
+
           if (get().recordingState !== 'PAUSED')
             updates.savedRecordingTimeMs = 0;
         } else if (
@@ -135,6 +141,14 @@ export const useTranscriptionStore = create<TranscriptionStore>()(
     { name: 'transcriptionStore', trace: true, serialize: { options: true } }
   )
 );
+
+export const setRecordingDisabled = (disabled: boolean) => {
+  useTranscriptionStore.setState(
+    { disabled },
+    false,
+    'DISABLE_ENABLE_RECORDING'
+  );
+};
 
 export const addStreamingTranscription = (text: string) => {
   useTranscriptionStore.setState(

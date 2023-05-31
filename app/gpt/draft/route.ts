@@ -4,18 +4,18 @@ import { emailPrompts } from '@/utils/gpt/prompts';
 
 export async function POST(request: NextRequest) {
   try {
-    const { transcription } = await request.json();
+    const { systemPrompt, userPrompt } = await request.json();
 
-    console.log('Got transcription ', transcription);
+    console.log('Got parameters ', systemPrompt, userPrompt);
 
     const messages: Messages = [
       {
         role: 'system',
-        content: emailPrompts.createSystemPrompt(),
+        content: systemPrompt,
       },
       {
         role: 'user',
-        content: emailPrompts.createUserPrompt(transcription),
+        content: userPrompt,
       },
     ];
 

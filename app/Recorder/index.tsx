@@ -14,11 +14,13 @@ import Button from '@/components/Button';
 import {
   Transcription,
   addStreamingTranscription,
+  setRecordingDisabled,
   useTranscriptionStore,
 } from '@/store/record';
 import Samples from './Samples';
 import TranscriptionsBlock from './TranscriptionsBlock';
 import HeaderBlock from './HeaderBlock';
+import { useWritingStore } from '@/store/writing';
 
 function PlaybackTime() {
   const { savedRecordingTimeMs, lastRecordingStart } = useTranscriptionStore(
@@ -80,6 +82,7 @@ function Recorder() {
     recordingState,
     transcriptions,
     updateTranscribingState,
+    disabled: recordingDisabled,
     isTranscribing,
     streamingTranscriptions,
     onTranscribe: onStoreTranscribe,
@@ -98,6 +101,12 @@ function Recorder() {
           ))
       ),
     []
+  );
+
+  const latestTranscription = useTranscriptionStore((state) =>
+    state.transcriptions.length
+      ? state.transcriptions[state.transcriptions.length - 1]
+      : null
   );
 
   const onTranscribeWhenSilent = async (blob: Blob) => {
@@ -296,17 +305,9 @@ function Recorder() {
     stopRecording,
   ]);
 
-  const processGpt = useCallback(
-    async (transcription?: Transcription) => {
-      let processThisTranscription: Transcription | undefined = transcription;
-      if (!transcription) {
-        processThisTranscription = transcriptions[transcriptions.length - 1];
-      }
-    },
-    [transcriptions, updateRecordingState]
-  );
-
   const handleStop = useCallback(async () => {
+    setRecordingDisabled(true);
+
     console.log(
       'Streamed transcriptions - ',
       streamingTranscriptions.map((c) => c.text).join('')
@@ -318,30 +319,14 @@ function Recorder() {
     if (recording) {
       await stopRecording();
     }
-    if (!recording) {
-      processGpt();
-    }
-  }, [stopAudio, stopRecording, stream, recording, processGpt]);
-
-  useEffect(() => {
-    const unsub = useTranscriptionStore.subscribe(
-      (state) => ({
-        recordingState: state.recordingState,
-        transcription: state.transcriptions[state.transcriptions.length - 1],
-      }),
-      (state: any) => {
-        if (state.recordingState === 'STOPPED') {
-          // Process GPT
-          processGpt(state.transcription);
-        }
-      }
-    );
-
-    return () => {
-      console.log();
-      unsub();
-    };
-  }, []); // eslint-disable-line
+  }, [
+    streamingTranscriptions,
+    stream,
+    stopAudio,
+    updateRecordingState,
+    recording,
+    stopRecording,
+  ]);
 
   const ButtonIcon = useMemo(() => {
     if (isTranscribing) return ChatBubbleOvalLeftEllipsisIcon;
@@ -369,7 +354,10 @@ function Recorder() {
                 Stop <StopCircleIcon className="h-5 inline" />
               </Button>
             )}
-          <Button onClick={handleState} disabled={isTranscribing}>
+          <Button
+            onClick={handleState}
+            disabled={isTranscribing || recordingDisabled}
+          >
             <PlaybackTime />
             <ButtonIcon className="h-5 inline" />
           </Button>
