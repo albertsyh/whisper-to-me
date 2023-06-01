@@ -274,7 +274,7 @@ function Recorder() {
     onTranscribeWhenSilent,
     removeSilence: true,
     onTranscribe,
-    timeSlice: 500,
+    timeSlice: 1000,
     silenceBufferThreshold: 25_000,
   });
 
