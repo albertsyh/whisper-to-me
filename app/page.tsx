@@ -1,4 +1,4 @@
-import Recorder from './Recorder';
+import Composer from './Composer';
 import styles from './page.module.scss';
 
 import ToggleTheme from '@/components/ToggleTheme';
@@ -12,7 +12,7 @@ export default function Home() {
           <ToggleTheme />
         </h1>
         <div className="flex h-full flex-col" style={{ minHeight: '50vh' }}>
-          <Recorder />
+          <Composer />
         </div>
       </div>
     </main>

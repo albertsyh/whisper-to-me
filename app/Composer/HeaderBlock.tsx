@@ -1,17 +1,15 @@
 import { PencilIcon } from '@heroicons/react/24/solid';
 import { memo } from 'react';
-import { RECORD_STATE } from '@/store/record';
+import { useRecordingStore } from '@/store/record';
 
-type HeaderBlockProps = {
-  state: RECORD_STATE;
-  hasTranscription: boolean;
-  isTranscribing: boolean;
-};
-function HeaderBlock({
-  state,
-  hasTranscription,
-  isTranscribing,
-}: HeaderBlockProps) {
+function HeaderBlock() {
+  const { isTranscribing, hasTranscription, state } = useRecordingStore(
+    ({ isTranscribing, transcriptions, recordingState }) => ({
+      isTranscribing,
+      state: recordingState,
+      hasTranscription: !!transcriptions.length,
+    })
+  );
   if (isTranscribing) {
     return <h2 className="text-2xl py-10">Transcribing...</h2>;
   }

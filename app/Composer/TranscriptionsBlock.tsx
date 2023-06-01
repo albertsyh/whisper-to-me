@@ -1,12 +1,12 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import classNames from 'classnames';
-import { Transcription } from '@/store/record';
+import { useRecordingStore } from '@/store/record';
 
-function TranscriptionsBlock({
-  transcriptions,
-}: {
-  transcriptions: Transcription[];
-}) {
+// TODO: Combine base audio transcription + GPT text + GPT edit audio transcription
+function TranscriptionsBlock() {
+  const { transcriptions } = useRecordingStore(({ transcriptions }) => ({
+    transcriptions,
+  }));
   return (
     <ul
       className="relative flex flex-col -ml-3 -mr-3 overflow-auto"
