@@ -1,21 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GPTResponseToken, Messages, streamChatGPT } from '@/utils/gpt/base';
-import { emailPrompts } from '@/utils/gpt/prompts';
+import {
+  GPTResponseToken,
+  Messages,
+  streamChatGPT,
+} from '@/utils/gpt/server/base';
+import { emailPrompts } from '@/utils/gpt/client/prompts';
 
 export async function POST(request: NextRequest) {
   try {
-    const { transcription } = await request.json();
+    const { transcription, previousEmail } = await request.json(); // Adding startNew here but we should be moving prompts client-side probably? Worse for security but somehow less complex server code feels better
 
     console.log('Got transcription ', transcription);
 
     const messages: Messages = [
       {
         role: 'system',
-        content: emailPrompts.createSystemPrompt(),
+        content: previousEmail
+          ? emailPrompts.updateSystemPrompt(previousEmail)
+          : emailPrompts.createSystemPrompt(),
       },
       {
         role: 'user',
-        content: emailPrompts.createUserPrompt(transcription),
+        content: previousEmail
+          ? emailPrompts.updateUserPrompt(transcription)
+          : emailPrompts.createUserPrompt(transcription),
       },
     ];
 
