@@ -19,9 +19,7 @@ export default function Home() {
         <div className="flex h-full flex-col" style={{ minHeight: '50vh' }}>
           <Recorder />
         </div>
-        <div className="h-full">
-          <WritingContainer />
-        </div>
+        <div className="h-full">{/* <WritingContainer /> */}</div>
       </div>
     </main>
   );

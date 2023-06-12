@@ -20,9 +20,10 @@ import { EndButton } from './EndButton';
 export function Recorder() {
   const { startRecording, stopRecording, recording, pauseRecording } =
     useWhisper({
-      timeSlice: 250, // seconds
+      timeSlice: 500, // seconds
       removeSilence: true,
       onTranscribe,
+      silenceBufferThreshold: 500,
       onTranscribeWhenSilent,
     });
 
