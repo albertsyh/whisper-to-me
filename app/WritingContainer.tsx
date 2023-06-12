@@ -4,8 +4,8 @@ import {
   getTranscriptionForGroup,
   storeIsReadyForNew,
   useTranscribeStore,
-} from '@/store/v2/transcribe';
-import { startVersion, useWritingStore } from '@/store/v2/write';
+} from '@/store/transcribe';
+import { startVersion, useWritingStore } from '@/store/write';
 import { useEffect, useState } from 'react';
 import { shallow } from 'zustand/shallow';
 

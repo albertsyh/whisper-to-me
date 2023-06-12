@@ -6,7 +6,7 @@ import {
   getTranscriptionForGroup,
   endTranscription,
   newGroup,
-} from '@/store/v2/transcribe';
+} from '@/store/transcribe';
 import { StopCircleIcon } from '@heroicons/react/24/solid';
 import { useState, useEffect } from 'react';
 

@@ -13,7 +13,7 @@ import {
   storeIsListening,
   storeIsReadyForNew,
   useTranscribeStore,
-} from '@/store/v2/transcribe';
+} from '@/store/transcribe';
 import { transcribeWithAPI } from '@/utils/transcribe';
 import { EndButton } from './EndButton';
 
