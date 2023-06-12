@@ -75,7 +75,7 @@ export type TranscribeStoreState = {
     transcriptionId: number; // Same as transcription's startedTimestamp
     pieceId: string; // This is the uuid that is used to post the job result. Shouldn't be a problem, we're filtering only in pending jobs so collision probability is near-nothing for just 8 alphanumeric characters.
     type: 'FULL' | 'PARTIAL'; // Partial means it's a transcribe on silent.
-    state: 'PROCESSING' | 'TRANSCRIBED' | 'FAILED';
+    state: 'PROCESSING' | 'TRANSCRIBED' | 'FAILED' | 'EMPTY'; // The empty state exists to say use other transcriptions instead of this one.
     startProcessing?: Date;
     endProcessing?: Date;
     transcription: string | null;
@@ -176,23 +176,32 @@ export const endTranscription = () => {
  * @param type PARTIAL or FULL
  * @returns The uuid you can use to mark the job as completed or failed.
  */
-export const newJob = (type: TranscribeStoreState['jobs'][0]['type']) => {
+export const newJob = (
+  type: TranscribeStoreState['jobs'][0]['type'],
+  empty?: boolean
+) => {
   const pieceId = generateShortUUID();
 
   useTranscribeStore.setState(
-    (state) => ({
-      jobs: [
-        ...state.jobs,
-        {
-          transcriptionId: getLatestTranscription(state).startedTimestamp,
-          pieceId,
-          startedProcessing: new Date(),
-          state: 'PROCESSING',
-          transcription: null,
-          type,
-        },
-      ],
-    }),
+    (state) => {
+      let job: TranscribeStoreState['jobs'][0] = {
+        transcriptionId: getLatestTranscription(state).startedTimestamp,
+        pieceId,
+        startProcessing: new Date(),
+        state: 'PROCESSING',
+        transcription: null,
+        type,
+      };
+
+      if (empty) {
+        job.state = 'EMPTY';
+        job.endProcessing = new Date();
+      }
+
+      return {
+        jobs: [...state.jobs, job],
+      };
+    },
     false,
     'STARTED_JOB'
   );
@@ -338,38 +347,58 @@ export const getTranscriptionForGroup = (
     transcriptionIds.includes(job.transcriptionId)
   );
 
-  const fullTranscription =
-    jobs
-      .filter((job) => job.type === 'FULL' && job.state === 'TRANSCRIBED')
-      .map((job) => job.transcription)
-      .join(' ') || null;
+  const transcripts = transcriptions.map((transcription, index) => {
+    const fullJob = jobs.find(
+      (job) =>
+        job.transcriptionId === transcription.startedTimestamp &&
+        job.type === 'FULL'
+    );
+    const partialJobs = jobs.filter(
+      (job) =>
+        job.transcriptionId === transcription.startedTimestamp &&
+        job.type === 'PARTIAL'
+    );
+    const pendingPartialJobs = partialJobs.some(
+      (job) => job.state === 'PROCESSING'
+    );
 
-  const streamTranscription =
-    transcriptions
-      .map((transcription) => {
-        const fullTranscription = jobs.find(
-          (job) =>
-            job.transcriptionId === transcription.startedTimestamp &&
-            job.type === 'FULL' &&
-            job.state === 'TRANSCRIBED'
-        );
+    let fullTranscript: string | undefined =
+      fullJob && fullJob.state === 'TRANSCRIBED' && fullJob.transcription
+        ? fullJob.transcription
+        : undefined;
+    let streamTranscript: string | undefined = partialJobs
+      .filter(
+        (partialJob) =>
+          partialJob.state === 'TRANSCRIBED' && partialJob.transcription
+      )
+      .map((partialJob) => partialJob.transcription)
+      .join(' ');
 
-        if (fullTranscription) return fullTranscription.transcription;
-        else
-          return (
-            jobs
-              .filter(
-                (job) =>
-                  job.transcriptionId === transcription.startedTimestamp &&
-                  job.type === 'PARTIAL' &&
-                  job.state === 'TRANSCRIBED'
-              )
-              .map((job) => job.transcription)
-              .join(' ') || null
-          );
-      })
-      .filter((transcript) => transcript !== null)
-      .join(' ') || null;
+    if (index < transcriptions.length - 1) {
+      // This is not the last one
+      if ((!fullJob || fullJob.state !== 'TRANSCRIBED') && !pendingPartialJobs)
+        fullTranscript = streamTranscript;
+    } else {
+      // This is the last one we should wait
+      if (
+        (!fullJob || fullJob.state === 'FAILED' || fullJob.state === 'EMPTY') &&
+        !pendingPartialJobs
+      )
+        fullTranscript = streamTranscript;
+    }
+
+    return {
+      fullTranscript,
+      streamTranscript,
+    };
+  });
+
+  const fullTranscription = transcripts
+    .map((transcript) => transcript.fullTranscript)
+    .join(' ');
+  const streamTranscription = transcripts
+    .map((transcript) => transcript.streamTranscript || '...')
+    .join(' ');
 
   const completedTranscriptionTimeMs = transcriptions
     .filter((transcription) => !!transcription.endedTimestamp)
