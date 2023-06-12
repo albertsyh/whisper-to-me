@@ -5,7 +5,7 @@ import {
   storeIsListening,
   storeIsReadyForNew,
   useTranscribeStore,
-} from '@/store/v2/transcribe';
+} from '@/store/transcribe';
 
 export function Statistics() {
   const storeListening = useTranscribeStore(storeIsListening);
