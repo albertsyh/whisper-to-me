@@ -6,7 +6,9 @@ export type WritingStoreState = {
     startedAt: number; // In the case of rehydrate from a transcribestore, we might need to fuzz these since they're also ids
     completedAt?: Date;
     inputText: string;
+    readyToStart: boolean;
     state: 'PROCESSING' | 'STREAMING' | 'COMPLETED' | 'FAILED';
+    groupId: number;
     outputText?: string; // we can add a group id later in case we do multiple writing streams?
     type: 'EMAIL'; // We can add more later
   }[];
@@ -21,73 +23,123 @@ export const useWritingStore = create<WritingStoreState>()(
   )
 );
 
-export const startVersion = (inputText: string) => {
+export const startVersion = (inputText: string, groupId: number) => {
   const startedAt = Date.now();
 
-  useWritingStore.setState({
-    versions: [
-      ...useWritingStore.getState().versions,
-      {
-        startedAt,
-        inputText,
-        state: 'PROCESSING',
-        type: 'EMAIL',
-      },
-    ],
-  });
+  useWritingStore.setState(
+    (state) => {
+      const readyToStart =
+        state.versions.length === 0 ||
+        state.versions.every(
+          (version) =>
+            version.state === 'COMPLETED' || version.state === 'FAILED'
+        );
+
+      return {
+        versions: [
+          ...state.versions,
+          {
+            startedAt,
+            groupId,
+            readyToStart,
+            inputText,
+            state: 'PROCESSING',
+            type: 'EMAIL',
+          },
+        ],
+      };
+    },
+    false,
+    'START_VERSION'
+  );
 
   return startedAt;
 };
 
-export const streamToVersion = (versionId: number, token: string) => {
-  useWritingStore.setState((state) => {
-    const newVersions: WritingStoreState['versions'] = JSON.parse(
-      JSON.stringify(state.versions)
-    );
+export const completeVersion = (versionId: number, outputText?: string) => {
+  useWritingStore.setState(
+    (state) => {
+      const newVersions: WritingStoreState['versions'] = JSON.parse(
+        JSON.stringify(state.versions)
+      );
 
-    const matchingVersion = newVersions.find(
-      (version) => version.startedAt === versionId
-    );
+      const matchingVersion = newVersions.find(
+        (version) => version.startedAt === versionId
+      );
 
-    if (!matchingVersion) {
-      console.error('No matching version found for id', versionId);
-      return {};
-    }
+      if (!matchingVersion) {
+        console.error('No matching version found for id', versionId);
+        return {};
+      }
 
-    matchingVersion.state = 'STREAMING';
-    matchingVersion.outputText = matchingVersion.outputText
-      ? matchingVersion.outputText + token
-      : token;
+      matchingVersion.completedAt = new Date();
 
-    return {
-      versions: newVersions,
-    };
-  });
+      if (outputText) {
+        matchingVersion.state = 'COMPLETED';
+        matchingVersion.outputText = outputText;
+      } else {
+        matchingVersion.state = 'FAILED';
+        matchingVersion.outputText = undefined;
+      }
+
+      return {
+        versions: newVersions,
+      };
+    },
+    false,
+    'COMPLETE_VERSION'
+  );
 };
 
-export const markVersionCompleted = (versionId: number, failed?: boolean) => {
-  useWritingStore.setState((state) => {
-    const newVersions: WritingStoreState['versions'] = JSON.parse(
-      JSON.stringify(state.versions)
-    );
+// export const streamToVersion = (versionId: number, token: string) => {
+//   useWritingStore.setState((state) => {
+//     const newVersions: WritingStoreState['versions'] = JSON.parse(
+//       JSON.stringify(state.versions)
+//     );
 
-    const matchingVersion = newVersions.find(
-      (version) => version.startedAt === versionId
-    );
+//     const matchingVersion = newVersions.find(
+//       (version) => version.startedAt === versionId
+//     );
 
-    if (!matchingVersion) {
-      console.error('No matching version found for id', versionId);
-      return {};
-    }
+//     if (!matchingVersion) {
+//       console.error('No matching version found for id', versionId);
+//       return {};
+//     }
 
-    if (failed) matchingVersion.state = 'FAILED';
-    else matchingVersion.state = 'COMPLETED';
-    matchingVersion.completedAt = new Date();
+//     matchingVersion.state = 'STREAMING';
+//     matchingVersion.outputText = matchingVersion.outputText
+//       ? matchingVersion.outputText + token
+//       : token;
 
-    return {
-      versions: newVersions,
-    };
-  });
-};
+//     return {
+//       versions: newVersions,
+//     };
+//   });
+// };
+
+// export const markVersionCompleted = (versionId: number, failed?: boolean) => {
+//   useWritingStore.setState((state) => {
+//     const newVersions: WritingStoreState['versions'] = JSON.parse(
+//       JSON.stringify(state.versions)
+//     );
+
+//     const matchingVersion = newVersions.find(
+//       (version) => version.startedAt === versionId
+//     );
+
+//     if (!matchingVersion) {
+//       console.error('No matching version found for id', versionId);
+//       return {};
+//     }
+
+//     if (failed) matchingVersion.state = 'FAILED';
+//     else matchingVersion.state = 'COMPLETED';
+//     matchingVersion.completedAt = new Date();
+
+//     return {
+//       versions: newVersions,
+//     };
+//   });
+// };
 
 // ################## SELECTORS ##################

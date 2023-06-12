@@ -64,6 +64,8 @@ export function Recorder() {
       complete
     );
 
+    // TODO: This isn't whisper-to-me's fault, but use-whisper keeps re-requesting the ffmpeg wasm every time. Almost all the requests are cached, but we need to investigate.
+
     let transcription = undefined;
 
     if (blob) {
