@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { MicrophoneIcon, PauseCircleIcon } from '@heroicons/react/24/solid';
 
 import Button from '@/components/Button';
-import { useWhisper } from '../../../use-whisper/lib';
+import { useWhisper } from '@albertsyh/use-whisper';
 import {
   completeJob,
   endTranscription,
