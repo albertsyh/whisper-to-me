@@ -425,7 +425,7 @@ export const getTranscriptionForGroup = (
 
   const active = groupId === state.currentTranscriptionGroup;
 
-  // TODO: Add a failed property here that we can use to skip transcriptions entirely if they fail for some reason as they occassionally do
+  // TODO: Add a failed property here that we can use to skip transcriptions entirely if they fail for some reason as they occasionally do
 
   return {
     groupId,

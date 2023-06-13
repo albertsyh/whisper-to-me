@@ -42,24 +42,6 @@ export function WritingContainer() {
     }
   );
 
-  // const nextTranscriptionToProcess = useTranscribeStore((state) => {
-  //   const nextTranscription = getTranscriptionForGroup(
-  //     state,
-  //     lastProcessedTranscriptionGroup + 1
-  //   );
-
-  //   if (
-  //     nextTranscription.fullTranscription &&
-  //     !nextTranscription.active &&
-  //     !nextTranscription.pendingJobs &&
-  //     (nextTranscription.groupId - state.currentTranscriptionGroup > 1 ||
-  //       storeIsReadyForNew(state))
-  //   )
-  //     return nextTranscription;
-
-  //   return null;
-  // });
-
   // TODO: this component should be considered deeply when rehydrating persisted state, fyi.
 
   useEffect(() => {
@@ -83,36 +65,6 @@ export function WritingContainer() {
       startVersion(nextFullTranscript, DEFAULT_VERSION_GROUP);
     }
   }, [nextTranscriptionGroup, lastProcessedTranscriptionGroup]);
-
-  // useEffect(() => {
-  //   console.log(
-  //     'useEffect, nextTranscriptionToProcess - ',
-  //     nextTranscriptionToProcess,
-  //     ', lastProcessedTranscriptionGroup - ',
-  //     lastProcessedTranscriptionGroup
-  //   );
-
-  //   if (
-  //     nextTranscriptionToProcess &&
-  //     nextTranscriptionToProcess.groupId > lastProcessedTranscriptionGroup
-  //   ) {
-  //     console.log(
-  //       'Transcription remaining to process - ',
-  //       nextTranscriptionToProcess
-  //     );
-
-  //     console.log(
-  //       'Setting last processed to ',
-  //       nextTranscriptionToProcess.groupId
-  //     );
-  //     setLastProcessedTranscriptionGroup(nextTranscriptionToProcess.groupId);
-
-  //     startVersion(
-  //       nextTranscriptionToProcess.fullTranscription!,
-  //       DEFAULT_VERSION_GROUP
-  //     );
-  //   }
-  // }, [nextTranscriptionToProcess, lastProcessedTranscriptionGroup]);
 
   const versionIds = useWritingStore(
     (state) => state.versions.map((version) => version.startedAt),

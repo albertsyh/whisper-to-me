@@ -5,6 +5,7 @@ export type WritingStoreState = {
   versions: {
     startedAt: number; // In the case of rehydrate from a transcribestore, we might need to fuzz these since they're also ids
     completedAt?: Date;
+    previousCompletedOutput?: string;
     inputText: string;
     readyToStart: boolean;
     state: 'PROCESSING' | 'STREAMING' | 'COMPLETED' | 'FAILED';
@@ -63,13 +64,28 @@ export const completeVersion = (versionId: number, outputText?: string) => {
         JSON.stringify(state.versions)
       );
 
-      const matchingVersion = newVersions.find(
+      const matchingVersionId = newVersions.findIndex(
         (version) => version.startedAt === versionId
       );
 
-      if (!matchingVersion) {
+      if (matchingVersionId === -1) {
         console.error('No matching version found for id', versionId);
         return {};
+      }
+
+      const matchingVersion = newVersions[matchingVersionId];
+
+      console.log(
+        'Matching version id is ',
+        matchingVersionId,
+        ' new Versions length is ',
+        newVersions.length
+      );
+
+      if (newVersions.length - matchingVersionId > 1) {
+        newVersions[matchingVersionId + 1].readyToStart = true;
+        newVersions[matchingVersionId + 1].previousCompletedOutput = outputText;
+        console.log('Next version is ', newVersions[matchingVersionId + 1]);
       }
 
       matchingVersion.completedAt = new Date();
