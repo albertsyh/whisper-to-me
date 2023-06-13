@@ -16,6 +16,7 @@ export function WritingContainer() {
   const [lastProcessedTranscriptionGroup, setLastProcessedTranscriptionGroup] =
     useState<number>(-1); // Don't actually use this value, other than the incremented version because of the -1
 
+  // Not sure if we should move this selector to the store
   const { nextTranscriptionGroup, nextFullTranscript } = useTranscribeStore(
     (state) => {
       const nextTranscription = getTranscriptionForGroup(
@@ -64,6 +65,8 @@ export function WritingContainer() {
 
       startVersion(nextFullTranscript, DEFAULT_VERSION_GROUP);
     }
+    // Disabling because we want to reduce re-renders
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nextTranscriptionGroup, lastProcessedTranscriptionGroup]);
 
   const versionIds = useWritingStore(
