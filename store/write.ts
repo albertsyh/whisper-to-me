@@ -1,6 +1,24 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
+/**
+ * This store is a lot simpler, lot less async things to keep track of. The
+ * primary concerns I wanted to add were:
+ * 1. Ability to load this store from persistence as the central source of truth.
+ * 2. Able to work in parallel, where jobs here aren't affecting the jobs in transcription.
+ * We manage state internally so that writing versions that depend on each other
+ * can start automatically. You can test this by adding two transcripts quickly, you'll see
+ * the second one fire and go as soon as the first is done.
+ * 3. Grouping - I wanted to have some primitive groups so that,
+ * a. We can have multiple writing jobs in memory
+ * b. Other processes can use GPT for transcriptions if they need to.
+ *
+ *
+ * Note: You'll see that actual streaming updates are handled entirely in-component.
+ * This was primarily so that this store doesn't have to re-compute too much - even with
+ * Immer it wasn't awesome how much re-copying took place to maintain immutability.
+ */
+
 export type WritingStoreState = {
   versions: {
     startedAt: number; // In the case of rehydrate from a transcribestore, we might need to fuzz these since they're also ids

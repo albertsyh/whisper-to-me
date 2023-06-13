@@ -45,16 +45,8 @@ export function WritingContainer() {
 
   // TODO: this component should be considered deeply when rehydrating persisted state, fyi.
 
+  // This useEffect is really all you need to push jobs from transcripts to the store.
   useEffect(() => {
-    console.log(
-      'useEffect, nextTranscriptionGroup - ',
-      nextTranscriptionGroup,
-      ', nextFullTranscript - ',
-      nextFullTranscript,
-      ', lastProcessedTranscriptionGroup - ',
-      lastProcessedTranscriptionGroup
-    );
-
     if (
       nextTranscriptionGroup !== null &&
       nextFullTranscript !== null &&
