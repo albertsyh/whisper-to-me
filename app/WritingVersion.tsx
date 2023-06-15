@@ -69,9 +69,9 @@ export const WritingVersion = memo(function WritingVersion({
     (started && (
       <div
         key={versionId}
-        className={' ' + (errorMessage ? 'bg-red-400' : 'bg-slate-500')}
+        className={'max-w-md' + (errorMessage ? 'bg-red-400' : '')}
       >
-        {content.split(' max-w-md').map((token, index) => (
+        {content.split(' ').map((token, index) => (
           <motion.span
             initial={{ opacity: 0, scale: 0.5, filter: 'blur(4px)' }}
             animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}

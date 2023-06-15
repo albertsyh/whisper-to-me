@@ -4,8 +4,8 @@ import { useEffect } from 'react';
 import { MicrophoneIcon, PauseCircleIcon } from '@heroicons/react/24/solid';
 
 import Button from '@/components/Button';
-// import { useWhisper } from '@albertsyh/use-whisper';
-import { useWhisper } from '../../use-whisper/lib';
+import { useWhisper } from '@albertsyh/use-whisper';
+// import { useWhisper } from '../../use-whisper/lib';
 import {
   completeJob,
   endTranscription,
@@ -15,7 +15,7 @@ import {
   storeIsReadyForNew,
   useTranscribeStore,
 } from '@/store/transcribe';
-import { transcribeWithAPI } from '@/utils/transcribe';
+import { transcribeWithAPI } from '@/utils/callTranscribeAPI';
 import { EndButton } from './EndButton';
 
 export function Recorder() {
@@ -43,7 +43,7 @@ export function Recorder() {
       startRecording();
     } else if (!storeListening && recording) {
       console.log('Stopping recorder...');
-      stopRecording();
+      if (recording) stopRecording();
     }
   }, [storeListening, recording, startRecording, stopRecording]);
 
