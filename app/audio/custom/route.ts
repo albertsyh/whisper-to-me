@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { file, model = 'medium.en' } = body;
+    const { file, model = process.env.HRISHI_WHISPER_MODEL } = body;
+
+    console.log('Env variables: ', process.env.HRISHI_WHISPER_URL, model);
 
     // Create the buffer from the base64 string
     const base64split = file.split(';base64,');
@@ -19,9 +21,9 @@ export async function POST(request: NextRequest) {
     formData.append('model_size', model);
     formData.append('audio_data', blob, 'temp_recording');
 
-    const hendyURL = 'https://hrishidesk11.tail52103.ts.net/whisper/transcribe';
+    const hrishiURL = process.env.HRISHI_WHISPER_URL!;
 
-    const response = await fetch(hendyURL, {
+    const response = await fetch(hrishiURL, {
       method: 'POST',
       body: formData,
     });

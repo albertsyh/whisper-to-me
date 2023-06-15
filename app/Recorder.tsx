@@ -5,6 +5,7 @@ import { MicrophoneIcon, PauseCircleIcon } from '@heroicons/react/24/solid';
 
 import Button from '@/components/Button';
 import { useWhisper } from '@albertsyh/use-whisper';
+// import { useWhisper } from '../../use-whisper/lib';
 import {
   completeJob,
   endTranscription,
@@ -14,13 +15,14 @@ import {
   storeIsReadyForNew,
   useTranscribeStore,
 } from '@/store/transcribe';
-import { transcribeWithAPI } from '@/utils/transcribe';
+import { transcribeWithAPI } from '@/utils/callTranscribeAPI';
 import { EndButton } from './EndButton';
 
 export function Recorder() {
   const { startRecording, stopRecording, recording, pauseRecording } =
     useWhisper({
-      timeSlice: 250, // seconds
+      timeSlice: 500, // seconds
+      silenceBufferThreshold: 500,
       removeSilence: true,
       onTranscribe,
       onTranscribeWhenSilent,
@@ -41,33 +43,42 @@ export function Recorder() {
       startRecording();
     } else if (!storeListening && recording) {
       console.log('Stopping recorder...');
-      stopRecording();
+      if (recording) stopRecording();
     }
   }, [storeListening, recording, startRecording, stopRecording]);
 
   async function onTranscribe(blob: Blob) {
-    console.log('onTranscribe...');
-
-    const pieceId = newJob('FULL');
-
-    const transcription = await transcribeWithAPI(blob);
-
-    completeJob(pieceId, transcription);
+    // This is just a dummy ontranscribe, nothing actually happens
 
     return {
       blob,
-      text: transcription,
+      text: undefined,
     };
   }
 
-  async function onTranscribeWhenSilent(blob: Blob) {
-    console.log('onTranscribeWhenSilent');
+  async function onTranscribeWhenSilent(blob?: Blob, complete?: boolean) {
+    console.log(
+      'onTranscribeWhenSilent, blob exists? ',
+      !!blob,
+      'complete? ',
+      complete
+    );
 
-    const pieceId = newJob('PARTIAL');
+    // TODO: This isn't whisper-to-me's fault, but use-whisper keeps re-requesting the ffmpeg wasm every time. Almost all the requests are cached, but we need to investigate.
 
-    const transcription = await transcribeWithAPI(blob);
+    let transcription = undefined;
 
-    completeJob(pieceId, transcription);
+    if (blob) {
+      const pieceId = newJob('PARTIAL');
+
+      transcription = await transcribeWithAPI(blob);
+
+      completeJob(pieceId, transcription);
+    }
+
+    if (complete) {
+      newJob('FULL', true);
+    }
 
     return {
       blob,
